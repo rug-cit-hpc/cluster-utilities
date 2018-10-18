@@ -54,7 +54,7 @@ def strip_char(item):
 	if(item[-1] == '*'):
 		warning = 'red'
 		item = item[:-1]
-	item = suffixes.get(item[-1]) * int(item[:-1])
+	item = suffixes.get(item[-1]) * float(item[:-1])
 	return item, warning
 
 def date_pretty(date_string):
