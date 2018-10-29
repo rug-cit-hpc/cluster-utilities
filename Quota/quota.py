@@ -159,6 +159,12 @@ def process_entity(group_id):
 	elif(gid[:2] == '20'):
 		entity = 'user'
 		eid = 'f' + gid[2:]
+	elif(gid[:1] == '3'):
+		entity = 'user'
+		eid = 's' + gid[2:]
+	elif(gid[:1] == '4'):
+		entity = 'guest user'
+		eid = 'g'
 	else:
 		entity = 'user group'
 		eid = gid
