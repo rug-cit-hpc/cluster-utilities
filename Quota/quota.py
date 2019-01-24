@@ -147,9 +147,9 @@ class Quota():
 		print "  File Limit:	{}".format(self.flimit)
 		print "{}  Files:	{}{}".format(colors.get(self._warn_files),self.fusage,colors.get('end'))
 		if(self._warn_use == 'red' and self.dgrace != '-'):
-			print "{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.dusage,self.dgrace,colors.get('end'))
+			print "{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.ref[2],self.dgrace,colors.get('end'))
 			if(self.dgrace == "NONE"):
-				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.dusage,colors.get('end'))
+				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[2],colors.get('end'))
 		if(self._warn_files == 'red' and self.fgrace != '-'):
 			print "{}You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_files),self.fusage,self.fgrace,colors.get('end'))
 			if (self.fgrace == "NONE"):
