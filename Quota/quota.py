@@ -90,10 +90,14 @@ class Quota():
 		self.dalloc = strip_char(self.ref[2])
 		self.dlimit = strip_char(self.ref[3])
 		self.dgrace = self.ref[4]
+		if self.dgrace == "none":
+			self.dgrace = self.dgrace.upper()
 		self.fusage = int(self.ref[5])
 		self.falloc = int(self.ref[6])
 		self.flimit = int(self.ref[7])
 		self.fgrace = self.ref[8]
+		if self.fgrace == "none":
+			self.fgrace = self.fgrace.upper()
 		if(debug_flag):
 			print "{}Debug object variables{}".format(colors.get('red'),colors.get('end'))
 			print "Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(self.dusage,type(self.dusage),self.dalloc,type(self.dalloc),self.dlimit,type(self.dlimit),self.fusage,type(self.fusage),self.falloc,type(self.falloc),self.flimit,type(self.flimit),self.dgrace,type(self.dgrace),self.fgrace,type(self.fgrace))
@@ -143,9 +147,13 @@ class Quota():
 		print "  File Limit:	{}".format(self.flimit)
 		print "{}  Files:	{}{}".format(colors.get(self._warn_files),self.fusage,colors.get('end'))
 		if(self._warn_use == 'red' and self.dgrace != '-'):
-			print "{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.ref[1],self.dgrace,colors.get('end'))
+			print "{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.dusage,self.dgrace,colors.get('end'))
+			if(self.dgrace == "NONE"):
+				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.dusage,colors.get('end'))
 		if(self._warn_files == 'red' and self.fgrace != '-'):
 			print "{}You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_files),self.fusage,self.fgrace,colors.get('end'))
+			if (self.fgrace == "NONE"):
+				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.fusage,colors.get('end'))
 
 	def return_warnings(self):
 		return self._warn_use,self._warn_files
