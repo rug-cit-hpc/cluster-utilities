@@ -90,7 +90,8 @@ class Quota:
     def __init__(self, group, directory, debug_flag):
         self.group = group
         self.directory = directory
-        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory), '-h'])
+        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory), '-h'],
+                                           universal_newlines=True)
         if debug_flag:
             print(f'{colors.get("red")}Debug Raw{colors.get("end")}')
             print(self.raw)
