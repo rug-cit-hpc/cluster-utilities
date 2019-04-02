@@ -145,6 +145,8 @@ def main():
 			print("	{}".format(key))
 			value = holder.versionsOnlyA.get(key)
 			for i in value:
+				if ".bak_" in i:
+					continue
 				if i[-4:] == '.lua':
 					i = i[:-4]
 				print("		{}".format(i))
@@ -156,6 +158,8 @@ def main():
 			print("	{}".format(key))
 			value = holder.versionsOnlyB.get(key)
 			for i in value:
+				if ".bak_" in i:
+					continue
 				if i[-4:] == '.lua':
 					i = i[:-4]
 				print("		{}".format(i))
@@ -166,11 +170,15 @@ def main():
 		valueB = holder.versionsOnlyB.get(key)
 		print("	Versions only on {}".format(holder.nameDirA))
 		for i in valueA:
+			if ".bak_" in i:
+				continue
 			if i[-4:] == '.lua':
 				i = i[:-4]
 			print("		{}".format(i))
 		print("	Versions only on {}".format(holder.nameDirB))
 		for i in valueB:
+			if ".bak_" in i:
+				continue
 			if i[-4:] == '.lua':
 				i = i[:-4]
 			print("		{}".format(i))
