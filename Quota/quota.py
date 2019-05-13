@@ -210,9 +210,17 @@ def main():
 			if(args.r):
 				dwarn,fwarn = quota.return_warnings()
 				if(dwarn == 'red'):
-					print "{}You have exceeded your storage quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.dgrace,colors.get('end'))
+					if quota.dgrace == "NONE":
+						print "{}You have exceeded your storage quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} or contact system administrator.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.ref[2],colors.get('end'))
+					else:
+						print "{}You have exceeded your storage quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.dgrace,colors.get('end'))
 				elif(dwarn == 'warn'):
 					print "You have less than 5{} of your allocated storage remaining on the {} filesystem.".format(str('%'),d)
+				if(fwarn == 'red'):
+					if quota.fgrace == "NONE":
+						print "{}You have exceeded your file quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact system administrator.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.falloc,colors.get('end'))
+					else:
+						print "{}You have exceeded your file quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.fgrace,colors.get('end'))
 			else:
 				quota.full_print()
 
