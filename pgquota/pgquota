@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import subprocess, os, argparse
+import subprocess, os, argparse, grp
 
 colors = {
 	'blue' : '\033[94m', # some terminals don't support this so it just looks 'normal'
@@ -178,6 +178,10 @@ def process_entity(group_id):
 		eid = gid
 	return eid,entity
 
+def gname(gid):
+	# A wrapper function for grp
+	return grp.getgrgid(gid).gr_name
+
 def main():
 	groups = os.getgroups()
 	directories = [
@@ -190,11 +194,14 @@ def main():
 	#mutex.add_argument('-u',type=str,help="Specify user. Only prints quota for specified user's own group.",const=groups)
 	#mutex.add_argument('-g',type=str,help="Specify group. Only prints quota for specified group.",const=groups,nargs='?')
 	parser.add_argument('-r',help="Only output quota info if user is close to limit or above quota",action="store_true")
+	parser.add_argument('-a',help="Produces output for all groups a user is in, not just the default.",action="store_true")
 	parser.add_argument('-d',help="Produce debugging output. Please note this is for developer use and likely prints utter gibberish",action="store_true")
 	args = parser.parse_args()
 	for g in groups:
 		if(not args.r):
 			eid,entity = process_entity(g)
+			if entity == 'user group':
+				eid = gname(eid)
 			print "Quotas for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end'))
 		for d in directories:
 			try:
@@ -223,6 +230,10 @@ def main():
 						print "{}You have exceeded your file quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.fgrace,colors.get('end'))
 			else:
 				quota.full_print()
+			# reached the end of the first loop.
+		if(not args.a):
+			# exit if we've printed the first group (should always be the user first)
+			break
 
 main()
 
