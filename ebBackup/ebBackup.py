@@ -75,8 +75,8 @@ class EbFile():
 		self.fileName = None
 		self.softwareName = None
 		self.find_name()
-		#self.find_softName()
-		self.sanity_check()
+		self.find_softName()
+		#self.sanity_check()
 
 	def find_name(self):
 		if self.absPath == None:
@@ -144,7 +144,7 @@ def validate_input(d):
 		d[key] = value.translate(nonsense_str,"&")
 	return d
 
-def read_paths():
+def read_paths(): # unused, consider removing
 	paths_file = "ebpaths.yaml"
 	paths_file = open(paths_file)
 	paths = yaml.load(paths_file,Loader=yaml.BaseLoader)
