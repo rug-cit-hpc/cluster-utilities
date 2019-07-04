@@ -19,7 +19,7 @@ software_paths = [
 	'/apps/haswell/',
 	'/apps/sandybridge/',
 	'/apps/skylake/',
-	'/apps/generic/',
+	#'/apps/generic/',
 ]
 
 eb_suffix = 'software/*/*/easybuild/*.eb'
@@ -152,6 +152,9 @@ def list_to_eb(big_list):
 def list_to_md(big_list):
 	new_list = []
 	for i in big_list:
+		# filter out a few things
+		if '.bak_' in i:
+			continue
 		newObj = MdFile(i)
 		new_list.append(newObj)
 	return new_list
