@@ -8,9 +8,9 @@
 
 echo Peregrine test job starting...
 echo [Sleeping for 5 seconds]
-sleep 5
+sleep 20
 echo Peregrine test job complete.
 
-./peregrine_test_omp
+#./peregrine_test_omp
 
 #export OMP_NUM_THREADS=7
