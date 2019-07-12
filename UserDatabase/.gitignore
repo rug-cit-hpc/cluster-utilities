@@ -1,0 +1,17 @@
+.idea
+.ipynb_checkpoints/
+*.bak*
+*.csv*
+*.db*
+*.dat
+*.png
+*.svg
+*.tmp
+*.out
+*.log
+__pycache__/*
+key.1
+key.2
+LDAPPeregrine
+LDAP.conf
+slurm.epilogslurmctld
