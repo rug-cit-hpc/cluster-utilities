@@ -1,0 +1,10 @@
+sqlalchemy
+pandas
+ldap3
+numpy
+Crypto
+pycrypto
+ipython
+ipykernel
+matplotlib
+seaborn
