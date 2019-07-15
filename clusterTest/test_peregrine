@@ -5,9 +5,21 @@
 #    PRINTING HELPER METHODS                                                   #
 ################################################################################
 
-func_call=1
+call_count=1    # test counter
+fail_count=0    # failed test counter
+h_flag='false'  # color the word 'FAILED' in test output
 
-print_line()
+# check for the highlight flag
+while getopts 'h' HIGHLIGHT
+    do
+        case $HIGHLIGHT in
+            h) h_flag='true';;
+            *) printf 'test_peregrine got unsupported option. Quitting\n'; exit 126;;
+        esac
+    done
+
+
+function print_line()
 {
     local OPTIND OPTION OPTARG num_char
 
@@ -34,21 +46,29 @@ print_line()
 function print_message(){
 
     LEADING_TAB='    '
-    echo -e "\n${LEADING_TAB}TEST #$func_call    "
+    echo -e "\n${LEADING_TAB}TEST #$call_count    "
     print_line '-'
     
     if [[ $1 = 0 ]]
     then
         echo " PASSED: $2"
     else
-        echo " FAILED: $2"
+        # color the output of failed tests
+        if [[ $h_flag = 'true' ]]
+        then
+            echo -e " \033[0;41mFAILED:\033[0m $2"
+        else
+            echo " FAILED: $2"
+        fi
+
+        ((fail_count++))
     fi
 
     echo
     print_line "="
     echo
 
-    ((func_call++))
+    ((call_count++))
 
 }
 
@@ -63,10 +83,9 @@ function get_loaded_modules(){
     echo $loaded_modules
 }
 
-
 function grep_loaded_modules(){
-    # grep the loaded modules list for the given argument
-    # if the -c flag is given, count the number of matches
+
+    local OPTIND OPTION
 
     loaded_modules=$(get_loaded_modules)
 
@@ -74,16 +93,18 @@ function grep_loaded_modules(){
     do
         case $OPTION in
             c)
-		module_array=$1
-		
-                #    list modules        regex  (replace space with |)   count
-		echo "$loaded_modules" | grep -E ${module_array//\ /|} | wc -l
+                shift $(( OPTIND - 1 ))  # remove the -c option
+                module_array=$@
+                #      list modules      output newline   regex  (replace space with |)   count
+                echo "$loaded_modules" | sed "s/ /\n/g" | grep -E ${module_array//\ /|} | wc -l
+                return 0
                 ;;
-	    *)
-                echo "$loaded_modules" | grep "$1"
-		;;
-	esac
+            *)
+                printf 'grep_loaded_modules got unknown option %s' "${OPTION}";;
+        esac
     done
+
+    echo "$loaded_modules" | sed "s/ /\n/g" | grep $1
 }
 
 
@@ -108,9 +129,9 @@ module load $modules_array
 
 # check that all modules are loaded
 
-# TODO: This grep is wrong
-returned_num_modules_loaded=$(grep_loaded_modules -c $modules_array)
+returned_num_modules_loaded="$(grep_loaded_modules -c $modules_array)"
 expected_num_modules_loaded=3
+
 test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_message 0 "All modules loaded" || print_message 1 "All modules not loaded"
 
 
@@ -120,11 +141,12 @@ test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_mess
 echo -e "Starting deleting module test\n"
 
 # delete the first module
-module_str=${t_module_list[0]}
+module_str=${modules_str[0]}
+
 module del $module_str
 
 # check that the module has been removed
-is_deleted=$(grep_loaded_modules "$t_module")
+is_deleted=$(grep_loaded_modules "$module_str")
 
 test -z $is_deleted && print_message 0 "Module deleted successfully" || print_message 1 "Module failed to delete"
 
@@ -159,9 +181,8 @@ echo -e "Starting restoring module test\n"
 module restore &> /dev/null
 
 # check that the modules have been restored
-returned_num_modules_loaded=$(grep_loaded_modules -c $t_module_array)
+returned_num_modules_loaded=$(grep_loaded_modules -c $modules_array)
 expected_num_modules_loaded=2
-#test $returned_num_modules_loaded -eq $expected_num_modules_loaded && echo "All modules restored" || echo "All modules not restored"
 test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_message 0 "All modules restored" || print_message 1 "All modules not restored"
 
 
@@ -212,6 +233,7 @@ scontrol_output="$(scontrol show jobid -dd $job_id)"
 # check that the job is submitted
 test -n "$(echo $scontrol_output | grep -E 'PENDING|RUNNING|COMPLETED')" && print_message 0 "Test job successfully submitted" || print_message 1 "Test job failed to submit"
 
+
 #    TEST: CANCEL A JOB
 ########################################
 
@@ -225,4 +247,9 @@ scontrol_output="$(scontrol show jobid -dd $job_id)"
 # check that the job is cancelled
 test -n "$(echo $scontrol_output | grep 'CANCELLED')" && print_message 0 "Test job successfully cancelled" || print_message 1 "Test job failed to cancel"
 
+
+# Finished testing
+printf ' RESULT: Peregrine test completed. %s tests failed.\n\n' "${fail_count}"
+print_line '='
+echo
 
