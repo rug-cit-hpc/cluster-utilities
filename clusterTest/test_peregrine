@@ -7,13 +7,13 @@
 
 call_count=1    # test counter
 fail_count=0    # failed test counter
-h_flag='false'  # color the word 'FAILED' in test output
+G_flag='false'  # color the word 'FAILED' in test output
 
 # check for the highlight flag
-while getopts 'h' HIGHLIGHT
+while getopts 'G' HIGHLIGHT
     do
         case $HIGHLIGHT in
-            h) h_flag='true';;
+            G) G_flag='true';;
             *) printf 'test_peregrine got unsupported option. Quitting\n'; exit 126;;
         esac
     done
@@ -54,7 +54,7 @@ function print_message(){
         echo " PASSED: $2"
     else
         # color the output of failed tests
-        if [[ $h_flag = 'true' ]]
+        if [[ $G_FLAG = 'true' ]]
         then
             echo -e " \033[0;41mFAILED:\033[0m $2"
         else
@@ -71,6 +71,8 @@ function print_message(){
     ((call_count++))
 
 }
+
+
 
 ################################################################################
 #    MODULE MANAGEMENT TESTS                                                   #
@@ -128,7 +130,6 @@ modules_array=${modules_str[@]}
 module load $modules_array
 
 # check that all modules are loaded
-
 returned_num_modules_loaded="$(grep_loaded_modules -c $modules_array)"
 expected_num_modules_loaded=3
 
@@ -224,9 +225,8 @@ fi
 echo -e "Running test job\n"
 
 sbatch_output="$(sbatch peregrine_test_job.sh)"
+sleep 5 
 job_id="$(echo $sbatch_output | grep -oE '[^ ]+$')"
-
-echo "Test JobID: $job_id"
 
 scontrol_output="$(scontrol show jobid -dd $job_id)"
 
@@ -241,15 +241,26 @@ echo -e "Cancelling test job"
 
 # cancel the job
 scancel $job_id
-
+sleep 5
 scontrol_output="$(scontrol show jobid -dd $job_id)"
+
+
+slurm_file="slurm-$job_id.out"
+SLURM_OUTPUT=$(<${slurm_file})
+
 
 # check that the job is cancelled
 test -n "$(echo $scontrol_output | grep 'CANCELLED')" && print_message 0 "Test job successfully cancelled" || print_message 1 "Test job failed to cancel"
 
+echo "SLURM OUTPUT FILE CONTENTS FOR JOB $job_id"
+echo
+echo "${SLURM_OUTPUT}"
+echo
+
+# delete the file when we're done
+rm $slurm_file
 
 # Finished testing
-printf ' RESULT: Peregrine test completed. %s tests failed.\n\n' "${fail_count}"
-print_line '='
-echo
+print_line '+'
+printf '\n RESULT: Peregrine test completed. %s tests failed.\n\n' "${fail_count}"
 
