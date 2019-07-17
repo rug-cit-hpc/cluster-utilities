@@ -225,8 +225,8 @@ fi
 echo -e "Running test job\n"
 
 sbatch_output="$(sbatch peregrine_test_job.sh)"
-sleep 5 
-job_id="$(echo $sbatch_output | grep -oE '[^ ]+$')"
+sleep 5  # sleep to allow to out-file to be written to
+job_id="$(echo $sbatch_output | grep -oE '[^ ]+$')"  # 'grep' gets the last word (the job id)
 
 scontrol_output="$(scontrol show jobid -dd $job_id)"
 
@@ -241,7 +241,7 @@ echo -e "Cancelling test job"
 
 # cancel the job
 scancel $job_id
-sleep 5
+sleep 5  # sleep to allow the out-file to be written to
 scontrol_output="$(scontrol show jobid -dd $job_id)"
 
 
