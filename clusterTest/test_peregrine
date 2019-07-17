@@ -1,23 +1,43 @@
 #!/bin/bash
 
-
 ################################################################################
-#    PRINTING HELPER METHODS                                                   #
+#    GLOBALS & ARGUMENT PARSING                                                 #
 ################################################################################
 
 call_count=1    # test counter
 fail_count=0    # failed test counter
-G_flag='false'  # color the word 'FAILED' in test output
+colour_flag='false'  # color the words 'PASSED/FAILED' in test output
 
-# check for the highlight flag
-while getopts 'G' HIGHLIGHT
-    do
-        case $HIGHLIGHT in
-            G) G_flag='true';;
-            *) printf 'test_peregrine got unsupported option. Quitting\n'; exit 126;;
-        esac
-    done
+LEADING_TAB='    '
+HELP_STR="usage: test_peregrine [-c, --colour]\n${LEADING_TAB}c: colour PASSED/FAILED output" 
 
+# check if verbose help option is given anywhere
+if [[ $@ =~ "--help" ]]
+then
+    echo -e "$HELP_STR"
+    exit
+fi
+
+# check for the verbose 'colo(u)r' flag
+if [ "$1" = "--colour" ] || [ "$1" = "--color" ]
+then
+    colour_flag='true'
+else
+    # check for the 'c' (colouring) and 'h' (help) flags
+    while getopts 'ch' COLOUR
+        do
+            case $COLOUR in
+                c) colour_flag='true';;
+                h) echo -e "$HELP_STR"; exit;;
+                *) printf '/test_peregrine got an unsupported option;  Quitting...\n'; exit 126;;
+            esac
+        done
+fi
+
+
+################################################################################
+#    PRINTING HELPER METHODS                                                   #
+################################################################################
 
 function print_line()
 {
@@ -45,18 +65,23 @@ function print_line()
 
 function print_message(){
 
-    LEADING_TAB='    '
     echo -e "\n${LEADING_TAB}TEST #$call_count    "
     print_line '-'
     
     if [[ $1 = 0 ]]
     then
-        echo " PASSED: $2"
-    else
-        # color the output of failed tests
-        if [[ $G_FLAG = 'true' ]]
+        # colour the output of failed tests
+        if [[ $colour_flag = 'true' ]]
         then
-            echo -e " \033[0;41mFAILED:\033[0m $2"
+            echo -e "\033[0;42m PASSED:\033[0m $2"
+        else
+            echo " PASSED: $2"
+        fi
+    else
+        # colour the output of failed tests
+        if [[ $colour_flag = 'true' ]]
+        then
+            echo -e "\033[0;41m FAILED:\033[0m $2"
         else
             echo " FAILED: $2"
         fi
@@ -259,6 +284,8 @@ echo
 
 # delete the file when we're done
 rm $slurm_file
+
+print_message 1 "Mock failure"
 
 # Finished testing
 print_line '+'
