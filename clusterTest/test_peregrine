@@ -285,7 +285,6 @@ echo
 # delete the file when we're done
 rm $slurm_file
 
-print_message 1 "Mock failure"
 
 # Finished testing
 print_line '+'
