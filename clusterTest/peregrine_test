@@ -1,15 +1,15 @@
 #!/bin/bash
 
 ################################################################################
-#    GLOBALS & ARGUMENT PARSING                                                 #
+#    GLOBALS & ARGUMENT PARSING                                                #
 ################################################################################
 
-call_count=1    # test counter
-fail_count=0    # failed test counter
-colour_flag='false'  # color the words 'PASSED/FAILED' in test output
+call_count=1         # test counter
+fail_count=0         # failed test counter
+colour_flag='false'  # colour the words 'PASSED/FAILED' in test output
 
 LEADING_TAB='    '
-HELP_STR="usage: test_peregrine [-c, --colour]\n${LEADING_TAB}c: colour PASSED/FAILED output" 
+HELP_STR="usage: peregrine_test [-c, --colour]\n${LEADING_TAB}c: colour PASSED/FAILED output" 
 
 # check if verbose help option is given anywhere
 if [[ $@ =~ "--help" ]]
@@ -29,7 +29,7 @@ else
             case $COLOUR in
                 c) colour_flag='true';;
                 h) echo -e "$HELP_STR"; exit;;
-                *) printf '/test_peregrine got an unsupported option;  Quitting...\n'; exit 126;;
+                *) printf 'peregrine_test got an unsupported option.  Quitting...\n\n'; exit 126;;
             esac
         done
 fi
@@ -221,8 +221,8 @@ echo -e "Checking for write access to /home\n"
 
 # check if you can write to /home
 #
-# NOTE: this does not actually write anything, as there is a tape backup for /home.
-#   You only check for *permission* to write.
+# NOTE: this does not actually write anything, as there is a tape backup for /home
+#   You only check for *permission* to write
 test -w /home && print_message 0 "/home is writeable" || print_message 1 "/home is not writeable"
 
 echo -e "Checking for write access to /data\n"
@@ -231,9 +231,39 @@ echo -e "Checking for write access to /data\n"
 test -w /data && print_message 0 "/data is writeable" || print_message 1 "/data is not writeable"
 
 
+###################
+
+# check if the /home dir is mounted correctly
+echo -e "Checking for write access to /home\n"
+
+test_output=$(touch /home/peregrine_test_file.txt)
+
+if [ -n $test_output ]
+then
+    print_message 0 "/home is mounted and writable. Removing test file..."
+    rm /home/peregrine_test_file.txt
+else
+    print_message 1 "/home is not writable"
+fi
+
+
+# check if the /home dir is mounted correctly
+echo -e "Checking for write access to /data\n"
+
+test_output=$(touch /data/peregrine_test_file.txt)
+
+if [ -n $test_output ]
+then
+    print_message 0 "/data is mounted and writable. Removing test file..."
+    rm /data/peregrine_test_file.txt
+else
+    print_message 1 "/data is not writable"
+fi
+
+
 
 ################################################################################
-#    JOB MANAGEMENT & MPI TESTS                                                #
+#    JOB MANAGEMENT & OPENMP TESTS                                                #
 ################################################################################
 
 #    TEST: SUBMIT A JOB
@@ -243,7 +273,7 @@ test -w /data && print_message 0 "/data is writeable" || print_message 1 "/data 
 if [ ! -x ./peregrine_test_job.sh ];
 then
     echo "peregrine_test_job.sh not found or is not executable"
-    echo "test_peregrine.sh cannot continue. Quitting."
+    echo -e "peregrine_test cannot continue.  Quitting...\n\n"
     exit 126
 fi
 
@@ -269,10 +299,9 @@ scancel $job_id
 sleep 5  # sleep to allow the out-file to be written to
 scontrol_output="$(scontrol show jobid -dd $job_id)"
 
-
+# copy the contents of the output file
 slurm_file="slurm-$job_id.out"
 SLURM_OUTPUT=$(<${slurm_file})
-
 
 # check that the job is cancelled
 test -n "$(echo $scontrol_output | grep 'CANCELLED')" && print_message 0 "Test job successfully cancelled" || print_message 1 "Test job failed to cancel"
@@ -282,11 +311,11 @@ echo
 echo "${SLURM_OUTPUT}"
 echo
 
-# delete the file when we're done
+# delete the output file when we're done
 rm $slurm_file
 
 
-# Finished testing
+# finished testing
 print_line '+'
 printf '\n RESULT: Peregrine test completed. %s tests failed.\n\n' "${fail_count}"
 
