@@ -98,6 +98,13 @@ function print_message(){
 }
 
 
+function print_results(){
+    # finished testing
+    print_line '+'
+    printf '\n RESULT: Peregrine test is finished. %s tests failed.\n\n' "${fail_count}"
+}
+
+
 
 ################################################################################
 #    MODULE MANAGEMENT TESTS                                                   #
@@ -273,7 +280,10 @@ fi
 if [ ! -x ./peregrine_test_job.sh ];
 then
     echo "peregrine_test_job.sh not found or is not executable"
-    echo -e "peregrine_test cannot continue.  Quitting...\n\n"
+    echo -e "\nperegrine_test cannot continue...\n"
+    
+    print_results
+
     exit 126
 fi
 
@@ -314,8 +324,4 @@ echo
 # delete the output file when we're done
 rm $slurm_file
 
-
-# finished testing
-print_line '+'
-printf '\n RESULT: Peregrine test completed. %s tests failed.\n\n' "${fail_count}"
-
+print_results
