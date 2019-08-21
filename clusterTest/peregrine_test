@@ -243,12 +243,10 @@ test -w /data && print_message 0 "/data is writeable" || print_message 1 "/data 
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /home\n"
 
-test_output=$(touch /home/peregrine_test_file.txt)
-
-if [ -n $test_output ]
+if touch /home/$USER/peregrine_test_file.txt
 then
     print_message 0 "/home is mounted and writable. Removing test file..."
-    rm /home/peregrine_test_file.txt
+    rm /home/$USER/peregrine_test_file.txt
 else
     print_message 1 "/home is not writable"
 fi
@@ -257,12 +255,10 @@ fi
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /data\n"
 
-test_output=$(touch /data/peregrine_test_file.txt)
-
-if [ -n $test_output ]
+if touch /data/$USER/peregrine_test_file.txt
 then
     print_message 0 "/data is mounted and writable. Removing test file..."
-    rm /data/peregrine_test_file.txt
+    rm /data/$USER/peregrine_test_file.txt
 else
     print_message 1 "/data is not writable"
 fi
