@@ -75,7 +75,7 @@ function print_message(){
         then
             echo -e "\033[0;42m PASSED:\033[0m $2"
         else
-            echo " PASSED: $2"
+            echo -e " PASSED: $2"
         fi
     else
         # colour the output of failed tests
@@ -83,7 +83,7 @@ function print_message(){
         then
             echo -e "\033[0;41m FAILED:\033[0m $2"
         else
-            echo " FAILED: $2"
+            echo -e " FAILED: $2"
         fi
 
         ((fail_count++))
@@ -224,26 +224,19 @@ test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_mess
 #    I/O TESTS                                                                 #
 ################################################################################
 
-echo -e "Checking for write access to /home\n"
-
-# check if you can write to /home
-#
-# NOTE: this does not actually write anything, as there is a tape backup for /home
-#   You only check for *permission* to write
-test -w /home && print_message 0 "/home is writeable" || print_message 1 "/home is not writeable"
-
-echo -e "Checking for write access to /data\n"
-
-# check if you can write to /data
-test -w /data && print_message 0 "/data is writeable" || print_message 1 "/data is not writeable"
-
-
-###################
+#    TEST: CHECK WRITE ACCESS TO /home AND /data 
+########################################
 
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /home\n"
 
+<<<<<<< Updated upstream
 if touch /home/$USER/peregrine_test_file.txt
+=======
+test_output=`(touch /home/peregrine_test_file.txt 2>&1)`
+
+if [ -z "$test_output" ]
+>>>>>>> Stashed changes
 then
     print_message 0 "/home is mounted and writable. Removing test file..."
     rm /home/$USER/peregrine_test_file.txt
@@ -255,7 +248,13 @@ fi
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /data\n"
 
+<<<<<<< Updated upstream
 if touch /data/$USER/peregrine_test_file.txt
+=======
+test_output=`(touch /data/peregrine_test_file.txt 2>&1)`
+
+if [ -z "$test_output" ]
+>>>>>>> Stashed changes
 then
     print_message 0 "/data is mounted and writable. Removing test file..."
     rm /data/$USER/peregrine_test_file.txt
@@ -281,6 +280,19 @@ then
     print_results
 
     exit 126
+fi
+
+# check that we can compile the test omp file
+echo -e "Compiling test omp file\n"
+
+# compile the test 'omp' C++ file. The resulting binary file is run in peregrine_test_job.sh script.
+compilation_output=`(g++ -o peregrine_test_omp -fopenmp peregrine_test_omp.cc 2>&1)`
+
+if [ -z "$compilation_output" ]
+then
+    print_message 0 "Test omp file compiled successfully"
+else
+    print_message 1 "Test omp file did not compile successfully\n\nCOMPILATION OUTPUT:\n\n$compilation_output"
 fi
 
 echo -e "Running test job\n"
