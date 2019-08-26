@@ -204,7 +204,6 @@ else
     print_message 1 "All modules not purged"
 fi
 
-
 #    TEST: RESTORING MODULES
 #########################################
 
@@ -230,13 +229,7 @@ test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_mess
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /home\n"
 
-<<<<<<< Updated upstream
 if touch /home/$USER/peregrine_test_file.txt
-=======
-test_output=`(touch /home/peregrine_test_file.txt 2>&1)`
-
-if [ -z "$test_output" ]
->>>>>>> Stashed changes
 then
     print_message 0 "/home is mounted and writable. Removing test file..."
     rm /home/$USER/peregrine_test_file.txt
@@ -248,13 +241,7 @@ fi
 # check if the /home dir is mounted correctly
 echo -e "Checking for write access to /data\n"
 
-<<<<<<< Updated upstream
 if touch /data/$USER/peregrine_test_file.txt
-=======
-test_output=`(touch /data/peregrine_test_file.txt 2>&1)`
-
-if [ -z "$test_output" ]
->>>>>>> Stashed changes
 then
     print_message 0 "/data is mounted and writable. Removing test file..."
     rm /data/$USER/peregrine_test_file.txt
