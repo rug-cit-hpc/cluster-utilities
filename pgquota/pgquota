@@ -92,7 +92,10 @@ class Quota():
 		self.dgrace = self.ref[4]
 		if self.dgrace == "none":
 			self.dgrace = self.dgrace.upper()
-		self.fusage = int(self.ref[5])
+		if self.ref[5][-1] == '*':
+			self.fusage = int(self.ref[5][:-1])
+		else:
+			self.fusage = int(self.ref[5])
 		self.falloc = int(self.ref[6])
 		self.flimit = int(self.ref[7])
 		self.fgrace = self.ref[8]
