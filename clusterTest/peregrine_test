@@ -1,0 +1,506 @@
+#!/bin/bash
+
+################################################################################
+#    GLOBALS & ARGUMENT PARSING                                                #
+################################################################################
+
+call_count=1         # test counter
+fail_count=0         # failed test counter
+colour_flag='false'  # colour the words 'PASSED/FAILED' in test output
+
+LEADING_TAB='    '
+HELP_STR="usage: peregrine_test [-c, --colour]\n${LEADING_TAB}c: colour PASSED/FAILED output" 
+
+# check if verbose help option is given anywhere
+if [[ $@ =~ "--help" ]]
+then
+    echo -e "$HELP_STR"
+    exit
+fi
+
+# check for the verbose 'colo(u)r' flag
+if [ "$1" = "--colour" ] || [ "$1" = "--color" ]
+then
+    colour_flag='true'
+else
+    # check for the 'c' (colouring) and 'h' (help) flags
+    while getopts 'ch' COLOUR
+        do
+            case $COLOUR in
+                c) colour_flag='true';;
+                h) echo -e "$HELP_STR"; exit;;
+                *) echo -e 'peregrine_test got an unsupported option.  Quitting...\n'; exit 126;;
+            esac
+        done
+fi
+
+################################################################################
+#    PRINTING HELPER METHODS                                                   #
+################################################################################
+
+function print_line(){
+    # Print a given character across the entire terminal screen
+    # ARGS
+    #  [-n] print the character only n times
+    #
+
+    local OPTIND OPTION OPTARG num_char
+
+    num_char=$(tput cols)
+
+    while getopts 'n:' OPTION
+    do
+        case $OPTION in
+            n)  num_char="${OPTARG}";;
+            *)  printf -e 'print_line got unsupported option: %s' "${OPTION}";;
+        esac
+    done
+
+    shift $(( OPTIND - 1 ))
+
+    for ((i=1; i<=$num_char; i++))
+    do
+        echo -n $1
+    done
+    echo  # trailing newline
+}
+
+
+function print_header(){
+    # Print the Peregrine testing header
+    #
+
+    echo
+    print_line '.'
+    echo -e "\n"
+
+    # center the header in the terminal
+    num_char=$(tput cols)
+    num_space=$(( ((num_char-17)/2)-1 ))
+    
+    for ((i=1; i<=$num_space; i++))
+    do
+        echo -n " "
+    done
+
+    echo -e "PEREGRINE TESTING\n"
+    print_line '.'
+    echo
+}
+
+
+function print_message(){
+    # Print the PASS/FAIL result of a given test
+    # ARGS
+    #  0 or 1 - indicates success or failure, respectively
+    #  a given message
+    #
+
+    echo -e "\n${LEADING_TAB}TEST #$call_count    "
+    print_line '-'
+    
+    if [[ $1 = 0 ]]
+    then
+        # colour the output of failed tests
+        if [[ $colour_flag = 'true' ]]
+        then
+            echo -e "\033[0;42m PASSED:\033[0m $2"
+        else
+            echo -e " PASSED: $2"
+        fi
+    else
+        # colour the output of failed tests
+        if [[ $colour_flag = 'true' ]]
+        then
+            echo -e "\033[0;41m FAILED:\033[0m $2"
+        else
+            echo -e " FAILED: $2"
+        fi
+
+        ((fail_count++))
+    fi
+
+    echo
+    print_line "="
+    echo
+
+    ((call_count++))
+
+}
+
+
+function print_results(){
+    # Print the final results once we have finished testing
+    #
+
+    print_line '.'
+    echo -e '\nPeregrine test is finished.\n' 
+    
+    if [[ $colour_flag = 'true' ]]
+    then
+        printf '\n\033[0;44m RESULT:\033[0m %s tests failed.\n\n' "${fail_count}"
+    else
+        printf '\n RESULT: %s tests failed.\n\n' "${fail_count}"
+    fi
+}
+
+
+
+################################################################################
+#    MODULE MANAGEMENT TESTS                                                   #
+################################################################################
+
+function get_loaded_modules(){
+    # Get a list of modules which are loaded in the current session
+    #
+
+    loaded_modules=`(module -t list 2>&1)`  # -t option forces output to 1 column
+    echo $loaded_modules
+}
+
+
+function grep_loaded_modules(){
+    # Grep the list of loaded modules for a given string
+    # ARGS
+    #  [-c] count the number of matches instead
+    #
+
+    local OPTIND OPTION
+
+    loaded_modules=$(get_loaded_modules)
+
+    while getopts "c" OPTION
+    do
+        case $OPTION in
+            c)
+                shift $(( OPTIND - 1 ))  # remove the -c option
+                module_array=$@
+                #      list modules      output newline   regex  (replace space with |)   count
+                echo "$loaded_modules" | sed "s/ /\n/g" | grep -E ${module_array//\ /|} | wc -l
+                return 0
+                ;;
+            *)
+                printf 'grep_loaded_modules got unknown option %s' "${OPTION}";;
+        esac
+    done
+
+    echo "$loaded_modules" | sed "s/ /\n/g" | grep $1
+}
+
+
+# Start the testing program
+print_header
+
+
+#    TEST: LOADING MODULES
+########################################
+
+echo -e "Starting loading module test\n"
+
+# get the first three modules to load
+modules_str=( $(ls /software/modules/all -1 | head -3) )
+modules_array=${modules_str[@]}
+
+# load the first three modules
+module load $modules_array
+
+# check that all modules are loaded
+returned_num_modules_loaded="$(grep_loaded_modules -c $modules_array)"
+expected_num_modules_loaded=3
+
+test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_message 0 "All modules loaded" || print_message 1 "All modules not loaded"
+
+
+#    TEST: DELETING MODULES
+########################################
+
+echo -e "Starting deleting module test\n"
+
+# delete the first module
+module_str=${modules_str[0]}
+
+module del $module_str
+
+# check that the module has been removed
+is_deleted=$(grep_loaded_modules "$module_str")
+
+test -z $is_deleted && print_message 0 "Module deleted successfully" || print_message 1 "Module failed to delete"
+
+
+#    TEST: SAVING & PURGING MODULES
+#######################################
+
+echo -e "Starting purging module test\n"
+
+# save the other two modules as the default list
+module save &> /dev/null  # don't print output
+
+# purge all modules
+module purge
+
+# check that all modules have been removed
+loaded_modules=$(get_loaded_modules)
+if [[ "$loaded_modules" = "No modules loaded" ]]
+then
+    print_message 0 "All modules purged"
+else
+    print_message 1 "All modules not purged"
+fi
+
+
+#    TEST: RESTORING MODULES
+#########################################
+
+echo -e "Starting restoring module test\n"
+
+# restore from default list
+module restore &> /dev/null
+
+# check that the modules have been restored
+returned_num_modules_loaded=$(grep_loaded_modules -c $modules_array)
+expected_num_modules_loaded=2
+test $returned_num_modules_loaded -eq $expected_num_modules_loaded && print_message 0 "All modules restored" || print_message 1 "All modules not restored"
+
+
+
+################################################################################
+#    I/O TESTS                                                                 #
+################################################################################
+
+#    TEST: CHECK WRITE ACCESS TO /home
+########################################
+
+# check if the /home dir is mounted correctly
+echo -e "Checking for write access to /home\n"
+
+if touch /home/$USER/peregrine_test_file.txt
+then
+    print_message 0 "/home is mounted and writable. Removing test file..."
+    rm /home/$USER/peregrine_test_file.txt
+else
+    print_message 1 "/home is not writable"
+fi
+
+
+#    TEST: CHECK /home QUOTAS AND LIMITS
+#########################################
+
+# check if /home quota values are valid (non-zero)
+echo -e "Checking quota and limit values for /home\n"
+
+SUCCESS_FLAG='true'
+
+for i in 3 6  # row numbers for the quota values
+do
+
+    if [[ $i = '3' ]]
+    then
+        USER_OR_GROUP='user'
+    else
+        USER_OR_GROUP='group'
+    fi
+
+          # quota output      grp values
+    QUOTA=`(lfs quota /home | sed -n "$i"p)`
+
+    ((i--))  # go to the previous row to get the column names
+
+          # quota output      grp values
+    COLUMN=`(lfs quota /home | sed -n "$i"p)`
+
+    for j in 3 4 7 8  # column numbers for the quota values
+    do
+	LFS_VALUE=`(echo $QUOTA | awk -v ind="$j" '{ print $ind }')`
+	
+	if [[ $LFS_VALUE = '0' ]]
+	then
+            # get the corresponding column header for the value
+	    COL_NAME=`(echo $COLUMN | awk -v ind="$j" '{ print $ind }')`
+	    
+	    # differentiate between 'size' and 'no. of files' values
+	    if [ $j -le 4 ]
+	    then
+		TYPE="kbytes"
+	    else
+		TYPE="files"
+	    fi 
+	   
+	    echo "$USER_OR_GROUP $COL_NAME (in $TYPE) in /home is zero"    
+	    SUCCESS_FLAG='false'
+
+	fi
+    done
+done
+
+if [ $SUCCESS_FLAG = 'true' ]
+then
+    print_message 0 'All /home quota values are non-zero'
+else
+    print_message 1 'One or more /home quota values are zero'
+fi
+
+
+#    TEST: CHECK WRITE ACCESS TO /data
+########################################
+
+# check if the /data dir is mounted correctly
+echo -e "Checking for write access to /data\n"
+
+if touch /data/$USER/peregrine_test_file.txt
+then
+    print_message 0 "/data is mounted and writable. Removing test file..."
+    rm /data/$USER/peregrine_test_file.txt
+else
+    print_message 1 "/data is not writable"
+fi
+
+
+
+################################################################################
+#    OPENMP AND MPI JOB MANAGEMENT TESTS                                       #
+################################################################################
+
+#    TEST: COMPILE AN OMP JOB
+########################################
+
+# ensure that the OMP test file exists
+if [ ! -x ./peregrine_test_omp_job.sh ]
+then
+    echo "peregrine_test_omp_job.sh not found or is not executable"
+    echo -e "\nperegrine_test cannot continue...\n"
+    
+    print_results
+
+    exit 126
+fi
+
+# check that we can compile the test OMP file
+echo -e "Compiling test OMP file\n"
+
+# compile the test OMP C++ file. The resulting binary file is run in peregrine_test_omp_job.sh script.
+omp_compilation_output=`(g++ -o peregrine_test_omp -fopenmp peregrine_test_omp.cc 2>&1)`
+
+if [ -z "$omp_compilation_output" ]
+then
+    print_message 0 "Test OMP file compiled successfully"
+else
+    print_message 1 "Test OMP file did not compile successfully\n\nCOMPILATION OUTPUT:\n\n$omp_compilation_output"
+fi
+
+
+#    TEST: COMPILE AN MPI JOB
+########################################
+
+# ensure that the MPI test file exists
+if [ ! -x ./peregrine_test_mpi_job.sh ]
+then
+    echo "peregrine_test_mpi_job.sh not found or is not executable"
+    echo -e "\nperegrine_test cannot continue...\n"
+
+    print_results
+
+    exit 126
+fi
+
+# check that we can compile the test MPI file
+echo -e "Compiling test MPI file\n"
+
+echo -e "Loading foss/2018a for compilation...\n"
+module load foss/2018a
+
+# compile the test MPI C++ file. The resulting binary file is run in peregrine_test_mpi_job.sh script.
+mpi_compilation_output=`(mpic++ -o peregrine_test_mpi peregrine_test_mpi.cc 2>&1)`
+
+if [ -z "$mpi_compilation_output" ]
+then
+    print_message 0 "Test MPI file compiled successfully"
+else
+    print_message 1 "Test MPI file did not compile successfully\n\nCOMPILATION OUTPUT:\n\n$mpi_compilation_output"
+fi
+
+
+#    TEST: SUBMIT AN OMP JOB
+########################################
+
+echo -e "Running OMP test job\n"
+
+omp_sbatch_output="$(sbatch peregrine_test_omp_job.sh)"
+sleep 5  # sleep to allow to out-file to be written to
+omp_job_id="$(echo $omp_sbatch_output | grep -oE '[^ ]+$')"  # 'grep' gets the last word (the job id)
+
+omp_scontrol_output="$(scontrol show jobid -dd $omp_job_id)"
+
+# check that the OMP job is submitted
+test -n "$(echo $omp_scontrol_output | grep -E 'PENDING|RUNNING|COMPLETED')" && print_message 0 "OMP test job successfully submitted" || print_message 1 "OMP test job failed to submit"
+
+
+#    TEST: SUBMIT AN MPI JOB
+########################################
+
+echo -e "Running MPI test job\n"
+
+mpi_sbatch_output="$(sbatch peregrine_test_mpi_job.sh)"
+sleep 5  # sleep to allow to out-file to be written to
+mpi_job_id="$(echo $mpi_sbatch_output | grep -oE '[^ ]+$')"  # 'grep' gets the last word (the job id)
+
+mpi_scontrol_output="$(scontrol show jobid -dd $mpi_job_id)"
+
+# check that the MPI job is submitted
+test -n "$(echo $mpi_scontrol_output | grep -E 'PENDING|RUNNING|COMPLETED')" && print_message 0 "MPI test job successfully submitted" || print_message 1 "MPI test job failed to submit"
+
+
+#    TEST: CANCEL AN OMP JOB
+########################################
+
+echo -e "Cancelling OMP test job\n"
+
+# cancel the OMP job
+scancel $omp_job_id
+sleep 5  # sleep to allow the out-file to be written to
+omp_scontrol_output="$(scontrol show jobid -dd $omp_job_id)"
+
+# copy the contents of the OMP output file
+omp_slurm_file="slurm-$omp_job_id.out"
+OMP_SLURM_OUTPUT=$(<${omp_slurm_file})
+
+echo "SLURM OUTPUT FILE CONTENTS FOR (OMP) JOB $omp_job_id"
+echo
+echo "${OMP_SLURM_OUTPUT}"
+echo
+
+# check that the OMP job is cancelled
+test -n "$(echo $omp_scontrol_output | grep 'CANCELLED')" && print_message 0 "OMP test job successfully cancelled" || print_message 1 "OMP test job failed to cancel"
+
+# delete the OMP output file when we're done
+rm $omp_slurm_file
+
+
+#    TEST: CANCEL AN MPI JOB
+########################################
+
+echo -e "Cancelling MPI test job\n"
+
+# cancel the MPI job
+scancel $mpi_job_id
+sleep 5  # sleep to allow the out-file to be written to
+mpi_scontrol_output="$(scontrol show jobid -dd $mpi_job_id)"
+
+# copy the contents of the MPI output file
+mpi_slurm_file="slurm-$mpi_job_id.out"
+MPI_SLURM_OUTPUT=$(<${mpi_slurm_file})
+
+echo "SLURM OUTPUT FILE CONTENTS FOR (MPI) JOB $mpi_job_id"
+echo
+echo "${MPI_SLURM_OUTPUT}"
+echo
+
+# check that the MPI job is cancelled
+test -n "$(echo $mpi_scontrol_output | grep 'CANCELLED')" && print_message 0 "MPI test job successfully cancelled" || print_message 1 "MPI test job failed to cancel"
+
+# delete the MPI output file when we're done
+rm $mpi_slurm_file
+
+
+# Peregrine tests complete
+print_results
+
