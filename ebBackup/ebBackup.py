@@ -60,8 +60,9 @@ software_paths = [
 # There's nothing more nerve wracking than wondering if "rm -rf \~" is going to work as intended or its going to nuke
 # your entire home directory. Just don't do it.
 repos = {
-	'cit_repo' : '/home/f115714/easybuild/cit-easybuild/easyconfigs/',
-	'gent_repo': '/home/f115714/easybuild/easybuild-easyconfigs/easybuild/easyconfigs/'
+	'cit_repo' : os.path.join(os.environ['HOME'], 'easybuild', 'cit-hpc-easybuild', 'easyconfigs', ''),
+	'gent_repo': os.path.join(os.environ['HOME'], 'easybuild', 'easybuild-easyconfigs', 'easybuild', 'easyconfigs', ''),
+	'gent_archive_repo': os.path.join(os.environ['HOME'], 'easybuild', 'easybuild-easyconfigs', 'easybuild', 'easyconfigs', '__archive__', ''),
 }
 
 # ls suffixes

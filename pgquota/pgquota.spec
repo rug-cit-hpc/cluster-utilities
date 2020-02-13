@@ -1,6 +1,6 @@
 Name:		pgquota
-Version:	1.0
-Release:	1%{?dist}
+Version:	1.1
+Release:	3%{?dist}
 Summary:	Shows lfs user file and data quotas per file system
 
 Group:		System Environment/Base
@@ -34,6 +34,16 @@ install pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Wed Nov 13 2019 Klemen Voncina <k.voncina@rug.nl> - 1.1-3
+- Fixed an issue where exceeding the file limit would break the script.
+
+* Mon Aug 12 2019 Klemen Voncina <k.voncina@rug.nl> - 1.1-2
+- Fixed an issue where having Python3 available would break the script.
+
+* Mon May 27 2019 Klemen Voncina <k.voncina@rug.nl> - 1.1-1
+- Better group id print.
+- Printing for all of a user's groups is now optional. Default only prints for user's own group.
+
 * Wed May 22 2019 Klemen Voncina <k.voncina@rug.nl> - 1.0-1
 - Initial build
 
