@@ -11,3 +11,14 @@ by issues in the bibtex bibliography.
 
 The contents of the resulting references.wiki file can be inserted into
 the dokuwiki page.
+
+The bibtex style peregrine.bst has been generated using makebst.tex, which
+is included in the custom-bib package. 
+It can be run using:
+```
+latex makebst.tex
+```
+The resulting dbj file must be processed with tex, e.g:
+```
+tex peregrine.dbj
+```

@@ -13,7 +13,7 @@ cat header.wiki > references.wiki
 
 for year in $( seq $endyear -1 $startyear); do
    bib2bib -c "year=$year" $bibfile > $year.bib
-   bibtex2html -nofooter -noheader --no-abstract --no-keywords --nobibsource --nodoc -a $year.bib
+   bibtex2html -nofooter -noheader --no-abstract --no-keywords --nobibsource --nodoc --style peregrine.bst -a $year.bib
    cat << EOF >> references.wiki
 
 === $year ===
