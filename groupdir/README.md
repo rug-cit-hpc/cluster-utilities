@@ -10,3 +10,4 @@ sudo ./create_groupdir.sh
 ```
 
 All required information will be asked, with appropriate defaults where possible.
+Make sure to use the full name of the group, i.e. including the `pg-` prefix.
