@@ -6,7 +6,7 @@ The script also takes care of setting permissions, ownerships, ACLs, and quotas.
 ## Usage
 Just run the script as root:
 ```
-sudo ./create_groupdirs.sh
+sudo ./create_groupdir.sh
 ```
 
 All required information will be asked, with appropriate defaults where possible.
