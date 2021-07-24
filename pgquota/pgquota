@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import subprocess, os, argparse, grp
 
 colors = {
@@ -77,14 +77,14 @@ class Quota():
 	def __init__(self,group,directory,debug_flag):
 		self.group = group
 		self.directory = directory
-		self.raw = subprocess.check_output(['lfs','quota','-g',str(self.group),str(self.directory),'-h'])
+		self.raw = subprocess.check_output(['lfs','quota','-g',str(self.group),str(self.directory),'-h']).decode("utf-8")
 		if(debug_flag):
-			print "{}Debug Raw{}".format(colors.get('red'),colors.get('end'))
-			print self.raw
-			print "{}End of Debug Raw{}".format(colors.get('red'),colors.get('end'))
+			print("{}Debug Raw{}".format(colors.get('red'),colors.get('end')))
+			print(self.raw)
+			print("{}End of Debug Raw{}".format(colors.get('red'),colors.get('end')))
 		self.check_raw() # check the raw for errors before further processing
 		# Initialize here just so we keep track of what's available in the object
-		self.ref = filter(None,self.raw.split('\n')[2].split(' '))
+		self.ref = [i for i in self.raw.split('\n')[2].split(' ') if i]
 		self.sanity_check()
 		self.dusage = strip_char(self.ref[1])
 		self.dalloc = strip_char(self.ref[2])
@@ -102,9 +102,9 @@ class Quota():
 		if self.fgrace == "none":
 			self.fgrace = self.fgrace.upper()
 		if(debug_flag):
-			print "{}Debug object variables{}".format(colors.get('red'),colors.get('end'))
-			print "Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(self.dusage,type(self.dusage),self.dalloc,type(self.dalloc),self.dlimit,type(self.dlimit),self.fusage,type(self.fusage),self.falloc,type(self.falloc),self.flimit,type(self.flimit),self.dgrace,type(self.dgrace),self.fgrace,type(self.fgrace))
-			print "{}End Debug ojbect variables{}".format(colors.get('red'),colors.get('end'))
+			print("{}Debug object variables{}".format(colors.get('red'),colors.get('end')))
+			print("Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(self.dusage,type(self.dusage),self.dalloc,type(self.dalloc),self.dlimit,type(self.dlimit),self.fusage,type(self.fusage),self.falloc,type(self.falloc),self.flimit,type(self.flimit),self.dgrace,type(self.dgrace),self.fgrace,type(self.fgrace)))
+			print("{}End Debug ojbect variables{}".format(colors.get('red'),colors.get('end')))
 		self.bar = percent_bar(float((float(self.dusage)/float(self.dalloc))*100))
 		# some more empty internal variables
 		self._warn_use = None
@@ -140,23 +140,23 @@ class Quota():
 
 	def full_print(self):
 		# print directory
-		print "{}{}{}".format(colors.get('bold'),self.directory,colors.get('end'))
+		print("{}{}{}".format(colors.get('bold'),self.directory,colors.get('end')))
 		# print bar
-		print "{}{}{}{}{}".format(colors.get('bold'),colors.get(self._warn_use),self.bar,colors.get('end'),colors.get('end'))
-		print "  Quota:	{}".format(self.ref[2])
-		print "  Hard Limit:	{}".format(self.ref[3])
-		print "{}  Usage:	{}{}".format(colors.get(self._warn_use),self.ref[1],colors.get('end'))
-		print "  File Quota:	{}".format(self.falloc)
-		print "  File Limit:	{}".format(self.flimit)
-		print "{}  Files:	{}{}".format(colors.get(self._warn_files),self.ref[5],colors.get('end'))
+		print("{}{}{}{}{}".format(colors.get('bold'),colors.get(self._warn_use),self.bar,colors.get('end'),colors.get('end')))
+		print("  Quota:	{}".format(self.ref[2]))
+		print("  Hard Limit:	{}".format(self.ref[3]))
+		print("{}  Usage:	{}{}".format(colors.get(self._warn_use),self.ref[1],colors.get('end')))
+		print("  File Quota:	{}".format(self.falloc))
+		print("  File Limit:	{}".format(self.flimit))
+		print("{}  Files:	{}{}".format(colors.get(self._warn_files),self.ref[5],colors.get('end')))
 		if(self._warn_use == 'red' and self.dgrace != '-'):
-			print "{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.ref[2],self.dgrace,colors.get('end'))
+			print("{}You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_use),self.ref[2],self.dgrace,colors.get('end')))
 			if(self.dgrace == "NONE"):
-				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[2],colors.get('end'))
+				print("{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[2],colors.get('end')))
 		if(self._warn_files == 'red' and self.fgrace != '-'):
-			print "{}You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_files),self.ref[6],self.fgrace,colors.get('end'))
+			print("{}You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_files),self.ref[6],self.fgrace,colors.get('end')))
 			if (self.fgrace == "NONE"):
-				print "{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[6],colors.get('end'))
+				print("{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[6],colors.get('end')))
 
 	def return_warnings(self):
 		return self._warn_use,self._warn_files
@@ -205,32 +205,32 @@ def main():
 			eid,entity = process_entity(g)
 			if entity == 'user group':
 				eid = gname(eid)
-			print "Quotas for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end'))
+			print("Quotas for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end')))
 		for d in directories:
 			try:
 				quota = Quota(g,d,args.d)
 			except PermissionError:
 				if not args.r:
-					print "You do not have permission list quota for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end'))
+					print("You do not have permission list quota for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end')))
 				continue
 			except DataError:
 				if not args.r:
-					print "No data for {} {}{}{} in directory {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end'),colors.get('bold'),d,colors.get('end'))
+					print("No data for {} {}{}{} in directory {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end'),colors.get('bold'),d,colors.get('end')))
 				continue
 			if(args.r):
 				dwarn,fwarn = quota.return_warnings()
 				if(dwarn == 'red'):
 					if quota.dgrace == "NONE":
-						print "{}You have exceeded your storage quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} or contact system administrator.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.ref[2],colors.get('end'))
+						print("{}You have exceeded your storage quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} or contact system administrator.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.ref[2],colors.get('end')))
 					else:
-						print "{}You have exceeded your storage quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.dgrace,colors.get('end'))
+						print("{}You have exceeded your storage quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.dgrace,colors.get('end')))
 				elif(dwarn == 'warn'):
-					print "You have less than 5{} of your allocated storage remaining on the {} filesystem.".format(str('%'),d)
+					print("You have less than 5{} of your allocated storage remaining on the {} filesystem.".format(str('%'),d))
 				if(fwarn == 'red'):
 					if quota.fgrace == "NONE":
-						print "{}You have exceeded your file quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact system administrator.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.falloc,colors.get('end'))
+						print("{}You have exceeded your file quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact system administrator.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.falloc,colors.get('end')))
 					else:
-						print "{}You have exceeded your file quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.fgrace,colors.get('end'))
+						print("{}You have exceeded your file quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.fgrace,colors.get('end')))
 			else:
 				quota.full_print()
 			# reached the end of the first loop.

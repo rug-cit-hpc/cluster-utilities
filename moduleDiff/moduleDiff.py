@@ -102,7 +102,7 @@ def compare(holder,early_stop):
 def main():
 	# Argument Parser
 	parser = argparse.ArgumentParser()
-	parser.add_argument('dirs', metavar='dir', type=str, nargs=2,help='Directory name or path.')
+    parser.add_argument('dirs', metavar='dir', type=str, nargs=2,help='Directory name or path. [haswell | sandybridge | skylake]')
 	parser.add_argument('-s', help='Shallow. Only goes through top level module directory and does not compare versions.',action='store_true')
 	args = parser.parse_args()
 	# First we need to validate the directories we input
