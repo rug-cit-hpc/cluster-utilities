@@ -52,7 +52,7 @@ class DataError(Exception):
 def percent_bar(percent):
 	# Makes a string that when printed shows a percentage bar
 	bar = "" # empty string
-	fill ='#' # the fill character
+	fill = '#' # the fill character
 	empty = '=' # the empty character
 	warning = "!!!"
 	ok = "   "
@@ -84,7 +84,7 @@ def percent_bar(percent):
 
 def strip_char(item):
 	# takes a string with integers and characters and strips the characters from the end of it
-	suffixes= { # not exact but close enough to unify and calculate a percentage. Axed 3 zeroes off the end just because its uneccessary
+	suffixes = { # not exact but close enough to unify and calculate a percentage. Axed 3 zeroes off the end just because its uneccessary
 		'k' : 1,
 		'M' : 1000,
 		'G' : 1000000,
@@ -192,7 +192,7 @@ class Quota():
 				print(Col.w_color("You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.".format(self.directory, self.ref[2]), self._warn_use))
 		if(self._warn_files == 'red' and self.fgrace != '-'):
 			#print("{}You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.{}".format(colors.get(self._warn_files),self.ref[6],self.fgrace,colors.get('end')))
-			print(Col.w_color("You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.".format(self.ref[6],self.fgrace),self._warn_files))
+			print(Col.w_color("You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.".format(self.ref[6], self.fgrace), self._warn_files))
 			if (self.fgrace == "NONE"):
 				#print("{}You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.{}".format(colors.get(self._warn_use),self.directory,self.ref[6],colors.get('end')))
 				print(Col.w_color("You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.".format(self.directory, self.ref[6]), self._warn_use))
@@ -241,7 +241,7 @@ def main():
 	args = parser.parse_args()
 	for g in groups:
 		if(not args.r):
-			eid,entity = process_entity(g)
+			eid, entity = process_entity(g)
 			if entity == 'user group':
 				eid = gname(eid)
 			#print("Quotas for {} {}{}{}".format(entity,colors.get('bold'),eid,colors.get('end')))
@@ -260,7 +260,7 @@ def main():
 					print("No data for {} {} in directory {}".format(entity, Col.bold(eid), Col.bold(d)))
 				continue
 			if(args.r):
-				dwarn,fwarn = quota.return_warnings()
+				dwarn, fwarn = quota.return_warnings()
 				if(dwarn == 'red'):
 					if quota.dgrace == "NONE":
 						#print("{}You have exceeded your storage quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} or contact system administrator.{}".format(colors.get(dwarn),colors.get('bold'),d,colors.get('end'),colors.get(dwarn),quota.ref[2],colors.get('end')))
@@ -275,7 +275,7 @@ def main():
 				if(fwarn == 'red'):
 					if quota.fgrace == "NONE":
 						#print("{}You have exceeded your file quota on the {}{}{}{} filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact system administrator.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.falloc,colors.get('end')))
-						print(Col.w_color("You have exceeded your file quota on the {}".format(d), fwarn),Col.w_color(" filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact the system administrator.".format(quota.falloc), fwarn))
+						print(Col.w_color("You have exceeded your file quota on the {}".format(d), fwarn), Col.w_color(" filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact the system administrator.".format(quota.falloc), fwarn))
 					else:
 						#print("{}You have exceeded your file quota on the {}{}{}{} filesystem, please reduce usage within {}.{}".format(colors.get(fwarn),colors.get('bold'),d,colors.get('end'),colors.get(fwarn),quota.fgrace,colors.get('end')))
 						print(Col.w_color("You have exceeded your file quota on the {}".format(d), fwarn), Col.w_color(" filesystem, please reduce usage within {}.".format(quota.fgrace), fwarn))
