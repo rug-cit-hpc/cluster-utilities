@@ -34,7 +34,7 @@ install pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
-* Sat Jul 24 2021 Klemen Voncina <k.voncina@rug.nl> - 1.2-1
+* Mon Sep 20 2021 Klemen Voncina <k.voncina@rug.nl> - 1.2-1
 - Updated to use with Python3 (minor version bump)
 - Fixed an issue where student numbers would get cut off too far
 - Changed the way terminal colors are handled internally in the script
