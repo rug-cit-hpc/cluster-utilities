@@ -191,7 +191,7 @@ class Quota:
                     self.ref[2], self.dgrace), self._warn_use))
             if self.dgrace == "NONE":
                 print(Color.w_color(
-                    "You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce storage usage below {}.".format(
+                    "You have exceeded your grace period. You will be unable to write additional files to {} until you reduce storage usage below {}.".format(
                         self.directory, self.ref[2]), self._warn_use))
         if self._warn_files == 'red' and self.fgrace != '-':
             print(Color.w_color(
@@ -199,7 +199,7 @@ class Quota:
                     self.ref[6], self.fgrace), self._warn_files))
             if self.fgrace == "NONE":
                 print(Color.w_color(
-                    "You have exceeded your grace period of 7 days. You will be unable to write additional files to {} until you reduce file usage below {}.".format(
+                    "You have exceeded your grace period. You will be unable to write additional files to {} until you reduce file usage below {}.".format(
                         self.directory, self.ref[6]), self._warn_use))
 
     def return_warnings(self):
