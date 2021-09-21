@@ -275,7 +275,7 @@ def main():
                         # You can't neatly nest colored sequences because the 'end' character will end all non-standard colors, so we have to split it up by parts.
                         print(Color.w_color("You have exceeded your storage quota on the {}".format(d), dwarn),
                               Color.w_color(
-                                  " filesystem and your 7 day grace period is over. Please reduce usage below {} or contact system administrator.".format(
+                                  " filesystem and your grace period is over. Please reduce usage below {} or contact system administrator.".format(
                                       quota.ref[2]), dwarn))
                     else:
                         print(Color.w_color("You have exceeded your storage quota on the {}".format(d), dwarn),
@@ -287,7 +287,7 @@ def main():
                 if fwarn == 'red':
                     if quota.fgrace == "NONE":
                         print(Color.w_color("You have exceeded your file quota on the {}".format(d), fwarn), Color.w_color(
-                            " filesystem and your 7 day grace period is over. Please reduce usage below {} files or contact the system administrator.".format(
+                            " filesystem and your grace period is over. Please reduce usage below {} files or contact the system administrator.".format(
                                 quota.falloc), fwarn))
                     else:
                         print(Color.w_color("You have exceeded your file quota on the {}".format(d), fwarn),
