@@ -1,0 +1,11 @@
+export VERSION=1.2
+
+mkdir pgquota-${VERSION}
+cp pgquota pgquota-${VERSION}
+tar czf pgquota-${VERSION}.tar.gz pgquota-${VERSION}
+mv pgquota-${VERSION}.tar.gz ~/rpmbuild/SOURCES
+rm -rf pgquota-${VERSION}
+
+rpmbuild -ba pgquota.spec
+
+# resulting RPM can be found in ~/rpmbuild/RPMS/noarch/
