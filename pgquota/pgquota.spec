@@ -9,7 +9,7 @@ URL:		https://github.com/rug-cit-hpc/cluster-utilities
 Source0:	%{name}-%{version}.tar.gz
 BuildArch:	noarch
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
-Requires:	python
+Requires:	python3
 
 
 %description
