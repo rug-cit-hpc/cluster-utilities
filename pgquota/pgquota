@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import subprocess, os, argparse, grp, getpass
 
+NA_value = 'N/A'
+
 fs_type = {
    '/home'    : 'lustre',
    '/home2'   : 'zfsnfs',
@@ -93,6 +95,15 @@ def percent_bar(percent):
     bar += num_string
     return bar
 
+def convert_bytes(num):
+    # this function will convert bytes to MiB.... GiB... etc
+    step_unit = 1024
+
+    for x in ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']:
+        if num < step_unit:
+            return "{:.1f} {}".format (num, x)
+        num /= step_unit
+    return "{:.1f} {}".format (num, 'PiB')
 
 def strip_char(item):
     # takes a string with integers and characters and strips the characters from the end of it
@@ -145,9 +156,8 @@ class Quota:
         # functions to call
         self.gen_warnings()
 
-
     def quota_lustre(self,debug_flag):
-        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory), '-h']).decode(
+        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory)]).decode(
             "utf-8")
         if debug_flag:
             print(Color.red("Debug Raw"))
@@ -156,9 +166,9 @@ class Quota:
         self.check_raw()  # check the raw for errors before further processing
         # Initialize here just so we keep track of what's available in the object
         self.ref = [i for i in self.raw.split('\n')[2].split(' ') if i]
-        self.dusage = strip_char(self.ref[1])
-        self.dalloc = strip_char(self.ref[2])
-        self.dlimit = strip_char(self.ref[3])
+        self.dusage = int(self.ref[1])*1024
+        self.dalloc = int(self.ref[2])*1024
+        self.dlimit = int(self.ref[3])*1024
         self.dgrace = self.ref[4]
         if self.dgrace == "none":
             self.dgrace = self.dgrace.upper()
@@ -184,15 +194,15 @@ class Quota:
                     self.dusage = int(fields[3])
                     self.dalloc = int(fields[4])
                     self.dlimit = int(fields[4])
-                    self.dgrace = -1
+                    self.dgrace = NA_value
                     self.fusage = int(fields[5])
                     self.falloc = int(fields[6])
                     if self.falloc == 0:
-                       self.falloc = -1
+                       self.falloc = NA_value
                     self.flimit = int(fields[6])
                     if self.flimit == 0:
-                       self.flimit = -1
-                    self.fgrace = -1
+                       self.flimit = NA_value
+                    self.fgrace = NA_value
                     break
            self.sanity_check()
         except:
@@ -218,7 +228,7 @@ class Quota:
             self._warn_use = 'blue'
         # file warnings
         self._warn_files = 'blue'
-        if self.falloc > 0:
+        if self.falloc != NA_value:
            if self.fusage > self.falloc and self.falloc > 0:
                self._warn_files = 'red'
            elif float(float(float(self.falloc) - float(self.fusage)) / float(self.falloc) < 0.06):
@@ -229,16 +239,16 @@ class Quota:
         print(Color.bold(self.directory))
         # print bar
         print(Color.bold(Color.w_color(self.bar, self._warn_use)))
-        print("  Quota:	{}".format(self.dalloc))
-        print("  Hard Limit:	{}".format(self.dlimit))
-        print(Color.w_color("  Usage:\t{}".format(self.dusage), self._warn_use))
+        print("  Quota:	{}".format(convert_bytes(self.dalloc)))
+        print("  Hard Limit:	{}".format(convert_bytes(self.dlimit)))
+        print(Color.w_color("  Usage:\t{}".format(convert_bytes(self.dusage)), self._warn_use))
         print("  File Quota:	{}".format(self.falloc))
         print("  File Limit:	{}".format(self.flimit))
         print(Color.w_color("  Files:\t{}".format(self.fusage), self._warn_use))
         if self._warn_use == 'red' and self.dgrace != '-':
             print(Color.w_color(
                 "You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.".format(
-                    self.dalloc, self.dgrace), self._warn_use))
+                    convert_bytes(self.dalloc), self.dgrace), self._warn_use))
             if self.dgrace == "NONE":
                 print(Color.w_color(
                     "You have exceeded your grace period. You will be unable to write additional files to {} until you reduce storage usage below {}.".format(
