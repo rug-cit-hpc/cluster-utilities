@@ -1,5 +1,13 @@
 #!/usr/bin/python3
-import subprocess, os, argparse, grp
+import subprocess, os, argparse, grp, getpass
+
+fs_type = {
+   '/home'    : 'lustre',
+   '/home2'   : 'zfsnfs',
+   '/data'    : 'lustre',
+   '/scratch' : 'lustre',
+}
+
 
 class Color():
     colors = {
@@ -43,6 +51,12 @@ class PermissionError(Exception):
 
 
 class DataError(Exception):
+    pass
+
+class QuotaFileError(Exception):
+    pass
+
+class UnsupportedFsType(Exception):
     pass
 
 
@@ -107,18 +121,15 @@ class Quota:
     # Then we can print it or not
     def __init__(self, group, directory, debug_flag):
         self.group = group
-        print(self.group)
-        if directory == '/home':
-           if os.path.isdir(os.path.join('/home2', gname(self.group))):
-              self.directory = '/home'
-        else:
-           self.directory = directory
-      
-        if self.directory == '/home2': 
+        self.directory = directory
+       
+        if fs_type[self.directory] == 'lustre':
+           self.quota_lustre(debug_flag)
+        elif fs_type[self.directory] == 'zfsnfs':
            self.quota_zfsnfs(debug_flag)
         else:
-           self.quota_lustre(debug_flag)
-        
+           raise UnsupportedFsType
+
         if debug_flag:
             print(Color.red("Debug object variables"))
             print(
@@ -163,7 +174,13 @@ class Quota:
 
 
     def quota_zfsnfs(self,debug_flag):
-        return
+        filename = os.path.join(self.directory,'.quota')
+        try:
+           with open(filename) as f:
+              line = f.readline()
+              fields = line.trim().split('\\s+');
+        except:
+           raise(QuotaFileError)
 
     def check_raw(self):
         # checks for messages like "Permission denied."
@@ -250,12 +267,20 @@ def gname(gid):
 
 
 def main():
+    username = getpass.getuser()
     groups = os.getgroups()
+
+    if os.path.isdir(os.path.join('/home2', username)):
+       homefs = '/home2'
+    else:
+       homefs = '/home'
+
     directories = [
-        '/home',
+        homefs,
         '/data',
         '/scratch'
     ]
+
     parser = argparse.ArgumentParser()
     # mutex = parser.add_mutually_exclusive_group()
     # mutex.add_argument('-u',type=str,help="Specify user. Only prints quota for specified user's own group.",const=groups)
@@ -284,6 +309,14 @@ def main():
             except DataError:
                 if not args.r:
                     print("No data for {} {} in directory {}".format(entity, Color.bold(eid), Color.bold(d)))
+                continue
+            except QuotaFileError:
+                if not args.r:
+                    print("Error reading quota file for {}".format(Color.bold(d)))
+                continue
+            except UnsupportedFsType:
+                if not args.r:
+                    print("Unsupported file system type for {}".format(Color.bold(d)))
                 continue
             if args.r:
                 dwarn, fwarn = quota.return_warnings()
