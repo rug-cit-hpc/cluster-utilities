@@ -107,7 +107,34 @@ class Quota:
     # Then we can print it or not
     def __init__(self, group, directory, debug_flag):
         self.group = group
-        self.directory = directory
+        print(self.group)
+        if directory == '/home':
+           if os.path.isdir(os.path.join('/home2', gname(self.group))):
+              self.directory = '/home'
+        else:
+           self.directory = directory
+      
+        if self.directory == '/home2': 
+           self.quota_zfsnfs(debug_flag)
+        else:
+           self.quota_lustre(debug_flag)
+        
+        if debug_flag:
+            print(Color.red("Debug object variables"))
+            print(
+                "Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(
+                    self.dusage, type(self.dusage), self.dalloc, type(self.dalloc), self.dlimit, type(self.dlimit),
+                    self.fusage, type(self.fusage), self.falloc, type(self.falloc), self.flimit, type(self.flimit),
+                    self.dgrace, type(self.dgrace), self.fgrace, type(self.fgrace)))
+            print(Color.red("End Debug object variables"))
+        self.bar = percent_bar(float((float(self.dusage) / float(self.dalloc)) * 100))
+        # some more empty internal variables
+        self._warn_use = None
+        self._warn_files = None
+        # functions to call
+        self.gen_warnings()
+
+    def quota_lustre(self,debug_flag):
         self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory), '-h']).decode(
             "utf-8")
         if debug_flag:
@@ -133,20 +160,10 @@ class Quota:
         self.fgrace = self.ref[8]
         if self.fgrace == "none":
             self.fgrace = self.fgrace.upper()
-        if debug_flag:
-            print(Color.red("Debug object variables"))
-            print(
-                "Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(
-                    self.dusage, type(self.dusage), self.dalloc, type(self.dalloc), self.dlimit, type(self.dlimit),
-                    self.fusage, type(self.fusage), self.falloc, type(self.falloc), self.flimit, type(self.flimit),
-                    self.dgrace, type(self.dgrace), self.fgrace, type(self.fgrace)))
-            print(Color.red("End Debug object variables"))
-        self.bar = percent_bar(float((float(self.dusage) / float(self.dalloc)) * 100))
-        # some more empty internal variables
-        self._warn_use = None
-        self._warn_files = None
-        # functions to call
-        self.gen_warnings()
+
+
+    def quota_zfsnfs(self,debug_flag):
+        return
 
     def check_raw(self):
         # checks for messages like "Permission denied."
