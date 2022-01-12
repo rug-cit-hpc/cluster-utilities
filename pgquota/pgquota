@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import subprocess, os, argparse, grp, getpass
+import subprocess, os, argparse, grp, getpass, pathlib
 
 NA_value = 'N/A'
 
@@ -296,11 +296,10 @@ def main():
     username = getpass.getuser()
     groups = os.getgroups()
 
-    if os.path.isdir(os.path.join('/home2', username)):
-       homefs = '/home2'
-    else:
-       homefs = '/home'
-
+    # Resolve real location of home directory, ignoring symlinks
+    # We could also check the location, but I don't like calling df like functionality,
+    # and we need internal system knowledge anyway.
+    homefs = str(pathlib.Path(*pathlib.Path.home().resolve().parts[:2]))
     directories = [
         homefs,
         '/data',
