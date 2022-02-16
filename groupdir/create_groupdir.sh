@@ -74,7 +74,7 @@ read -p "Group quota on /data: " -i "-b 250G -B 250G -i 1000k -I 1100k" -e group
 lfs setquota -g ${groupname} ${groupquotadata} /data
 echo_green "Quota on /data set to: ${groupquotadata}"
 echo ""
-read -p "Group quota on /scratch: " -i "-b 45T -B 50T -i 10000k -I 11000k" -e groupquotascratch
+read -p "Group quota on /scratch: " -i "-b 10T -B 20T -i 5000k -I 5500k" -e groupquotascratch
 lfs setquota -g ${groupname} ${groupquotascratch} /scratch
 echo_green "Quota on /scratch set to: ${groupquotascratch}"
 echo ""
