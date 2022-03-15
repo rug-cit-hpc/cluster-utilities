@@ -104,9 +104,9 @@ def convert_bytes(num):
 
     for x in ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']:
         if num < step_unit:
-            return "{:.1f} {}".format (num, x)
+            return "{:.1f} {}".format(num, x)
         num /= step_unit
-    return "{:.1f} {}".format (num, 'PiB')
+    return "{:.1f} {}".format(num, 'PiB')
 
 def strip_char(item):
     # takes a string with integers and characters and strips the characters from the end of it
