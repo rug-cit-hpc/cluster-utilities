@@ -1,7 +1,7 @@
 Name:		pgquota
 Version:	1.3
 Release:	1%{?dist}
-Summary:	Shows lfs user file and data quotas per file system
+Summary:	Shows user file and data quotas per Peregrine file system
 
 Group:		System Environment/Base
 License:	MIT
@@ -13,7 +13,7 @@ Requires:	python3
 
 
 %description
-pgquota - uses lfs to check a user's quota for all file systems then presents this information in a nicely readable format.
+pgquota - shows user's quota for all Peregrine file systems, and presents this information in a nicely readable format.
 
 %prep
 %setup -q
