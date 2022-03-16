@@ -1,5 +1,5 @@
 Name:		pgquota
-Version:	1.2
+Version:	1.3
 Release:	1%{?dist}
 Summary:	Shows lfs user file and data quotas per file system
 
