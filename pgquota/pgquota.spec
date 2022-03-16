@@ -22,7 +22,7 @@ pgquota - uses lfs to check a user's quota for all file systems then presents th
 
 %install
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-install pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
+install pgquota/pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
 
 %files
 
