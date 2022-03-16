@@ -21,13 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Get the version number for the packages
-        id: get_version
-        # Get the version number from the .spec file
-        run: |
-          VERSION=$(grep "Version" pgquota/pgquota.spec | cut -f 2")
-          echo ::set-output name=version::${VERSION}
-
       - name: Build the RPM package
         id: rpm
         uses: naveenrajm7/rpmbuild@c0ba5e8840e67c7a651f2b40485dcbfd15de3e2f
