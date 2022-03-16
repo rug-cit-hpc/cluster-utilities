@@ -34,6 +34,12 @@ install pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Wed Jan 12 2022 Fokke Dijkstra <f.dijkstra@rug.nl> - 1.3-1
+- Adjusted pgquota to be able to work on a NFS exported
+  ZFS file system. Since ZFS does not export the quota 
+  through NFS The quota must be dumped into a file on
+  the file system in a cron job.
+
 * Mon Sep 20 2021 Klemen Voncina <k.voncina@rug.nl> - 1.2-1
 - Updated to use with Python3 (minor version bump)
 - Fixed an issue where student numbers would get cut off too far
