@@ -1,11 +1,13 @@
-export VERSION=1.2
+Run the following in the root of the git checkout:
 
-mkdir pgquota-${VERSION}
-cp pgquota pgquota-${VERSION}
-tar czf pgquota-${VERSION}.tar.gz pgquota-${VERSION}
-mv pgquota-${VERSION}.tar.gz ~/rpmbuild/SOURCES
-rm -rf pgquota-${VERSION}
+export VERSION=$(grep "Version" pgquota/pgquota.spec | cut -f 2)
 
-rpmbuild -ba pgquota.spec
+mkdir -p ~/rmpbuild/SOURCES
+mkdir /tmp/pgquota-${VERSION}
+cp pgquota/pgquota /tmp/pgquota-${VERSION}
+tar czf ~/rpmbuild/SOURCES/gquota-${VERSION}.tar.gz /tmp/pgquota-${VERSION}
+rm -rf /tmp/pgquota-${VERSION}
+
+rpmbuild -ba pgquota/pgquota.spec
 
 # resulting RPM can be found in ~/rpmbuild/RPMS/noarch/
