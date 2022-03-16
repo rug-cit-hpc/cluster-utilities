@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-      - rpmbuild_ci
     paths:
       - pgquota/*
   pull_request:
     branches:
       - main
-      - rpmbuild_ci
     paths:
       - pgquota/*
 
