@@ -1,15 +1,15 @@
-Name:		pgquota
-Version:	1.3
-Release:	1%{?dist}
-Summary:	Shows user file and data quotas per Peregrine file system
+Name:      pgquota
+Version:   1.3
+Release:   1%{?dist}
+Summary:   Shows user file and data quotas per Peregrine file system
 
-Group:		System Environment/Base
-License:	MIT
-URL:		https://github.com/rug-cit-hpc/cluster-utilities
-Source0:	%{name}-%{version}.tar.gz
-BuildArch:	noarch
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
-Requires:	python3
+Group:     System Environment/Base
+License:   MIT
+URL:       https://github.com/rug-cit-hpc/cluster-utilities
+Source0:   %{name}-%{version}.tar.gz
+BuildArch: noarch
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Requires:  python3
 
 
 %description
