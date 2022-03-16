@@ -36,7 +36,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Wed Jan 12 2022 Fokke Dijkstra <f.dijkstra@rug.nl> - 1.3-1
 - Adjusted pgquota to be able to work on a NFS exported
-  ZFS file system. Since ZFS does not export the quota 
+  ZFS file system. Since ZFS does not export the quota
   through NFS The quota must be dumped into a file on
   the file system in a cron job.
 
