@@ -1,0 +1,32 @@
+name: Build pgquota RPM package
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - pgquota/*
+  pull_request:
+    branches:
+      - main
+    paths:
+      - pgquota/*
+
+jobs:
+  build-rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build the RPM package
+        id: rpm
+        uses: naveenrajm7/rpmbuild@c0ba5e8840e67c7a651f2b40485dcbfd15de3e2f
+        with:
+          spec_file: "pgquota/pgquota.spec"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pgquota RPM
+          path: ${{ steps.rpm.outputs.rpm_dir_path }}
