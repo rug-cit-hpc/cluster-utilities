@@ -3,12 +3,12 @@ name: Build pgquota RPM package
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - pgquota/*
   pull_request:
     branches:
-      - main
+      - master
     paths:
       - pgquota/*
 
