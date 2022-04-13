@@ -1,6 +1,6 @@
 Name:      pgquota
 Version:   1.3
-Release:   1%{?dist}
+Release:   2%{?dist}
 Summary:   Shows user file and data quotas per Peregrine file system
 
 Group:     System Environment/Base
@@ -34,6 +34,9 @@ install pgquota/pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Wed Apr 13 2022 Fokke Dijkstra <f.dijkstra@rug.nl> - 1.3-2
+- Fixed a regression where the * was no longer removed from
+  out of quota numbers reported by Lustre.
 * Wed Jan 12 2022 Fokke Dijkstra <f.dijkstra@rug.nl> - 1.3-1
 - Adjusted pgquota to be able to work on a NFS exported
   ZFS file system. Since ZFS does not export the quota
