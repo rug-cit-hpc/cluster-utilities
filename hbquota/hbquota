@@ -292,6 +292,7 @@ def gname(gid):
 
 def main():
     username = getuser()
+    # Get list of groups based on username and gid, to make sure the primary group is listed first.
     gid = getgid()
     groups = getgrouplist(username, gid)
 
