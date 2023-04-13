@@ -295,6 +295,7 @@ def main():
     gid = getgid()
     groups = getgrouplist(username, gid)
 
+    # We loop over all directories for home as group home directories may exist somewhere
     directories = [
         '/home1',
         '/home2',
