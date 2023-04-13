@@ -132,9 +132,9 @@ class Quota:
         self.directory = directory
 
         if fs_type[self.directory] == 'lustre_g':
-           self.quota_lustre_g(debug_flag)
+           self.quota_lustre('-g', debug_flag)
         elif fs_type[self.directory] == 'lustre_p':
-           self.quota_lustre_p(debug_flag)
+           self.quota_lustre('-p', debug_flag)
         elif fs_type[self.directory] == 'zfsnfs':
            self.quota_zfsnfs(debug_flag)
         elif fs_type[self.directory] == 'xfsnfs':
@@ -161,32 +161,8 @@ class Quota:
         # functions to call
         self.gen_warnings()
 
-    def quota_lustre_g(self,debug_flag):
-        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory)]).decode(
-            "utf-8")
-        if debug_flag:
-            print(Color.red("Debug Raw"))
-            print(self.raw)
-            print(Color.red("End of Debug Raw"))
-        self.check_raw()  # check the raw for errors before further processing
-        # Initialize here just so we keep track of what's available in the object
-        self.ref = [i for i in self.raw.split('\n')[2].split(' ') if i]
-        self.dusage = int(strip_star(self.ref[1]))*1024
-        self.dalloc = int(strip_star(self.ref[2]))*1024
-        self.dlimit = int(strip_star(self.ref[3]))*1024
-        self.dgrace = self.ref[4]
-        if self.dgrace == "none":
-            self.dgrace = self.dgrace.upper()
-        self.fusage = int(strip_star(self.ref[5]))
-        self.falloc = int(self.ref[6])
-        self.flimit = int(self.ref[7])
-        self.fgrace = self.ref[8]
-        if self.fgrace == "none":
-            self.fgrace = self.fgrace.upper()
-        self.sanity_check()
-
-    def quota_lustre_p(self,debug_flag):
-        self.raw = subprocess.check_output(['lfs', 'quota', '-p', str(self.group), str(self.directory)]).decode(
+    def quota_lustre(self, quota_type, debug_flag):
+        self.raw = subprocess.check_output(['lfs', 'quota', quota_type, str(self.group), str(self.directory)]).decode(
             "utf-8")
         if debug_flag:
             print(Color.red("Debug Raw"))
