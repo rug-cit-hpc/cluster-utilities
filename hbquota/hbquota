@@ -130,11 +130,11 @@ class Quota:
     # Lets try this implementation
     # Create an object that contains all quota information for one directory for one user
     # Then we can print it or not
-    def __init__(self, group, directory, debug_flag):
+    def __init__(self, group, groupname, directory, debug_flag):
         self.group = group
         self.directory = directory
 
-        if not path.isdir(path.join(self.directory, gname(group))):
+        if not path.isdir(path.join(self.directory, groupname)):
            raise MissingFsDirectory
 
         if fs_type[self.directory] == 'lustre_g':
@@ -285,28 +285,6 @@ class Quota:
     def return_warnings(self):
         return self._warn_use, self._warn_files
 
-
-def process_entity(group_id):
-    # if possible, extracts username from group id, otherwise returns the value back unchanged
-    gid = str(group_id)  # we don't really need it as an int at any point
-    if gid[:2] == '10':
-        entity = 'user'
-        eid = 'p' + gid[2:]
-    elif gid[:2] == '20':
-        entity = 'user'
-        eid = 'f' + gid[2:]
-    elif gid[:1] == '3':
-        entity = 'user'
-        eid = 's' + gid[1:]
-    elif gid[:1] == '4':
-        entity = 'guest user'
-        eid = 'g'
-    else:
-        entity = 'user group'
-        eid = gid
-    return eid, entity
-
-
 def gname(gid):
     # A wrapper function for grp
     return grp.getgrgid(gid).gr_name
@@ -339,21 +317,18 @@ def main():
                         action="store_true")
     args = parser.parse_args()
     for g in groups:
-        if not args.r:
-            eid, entity = process_entity(g)
-            if entity == 'user group':
-                eid = gname(eid)
+        groupname = gname(g)
         founddir = 0
         for d in directories:
             try:
-                quota = Quota(g, d, args.d)
+                quota = Quota(g, groupname, d, args.d)
             except PermissionError:
                 if not args.r:
-                    print("You do not have permission to list quota for {} {}".format(entity, Color.bold(eid)))
+                    print("You do not have permission to list quota for {}".format(Color.bold(groupname)))
                 continue
             except DataError:
                 if not args.r:
-                    print("No data for {} {} in directory {}".format(entity, Color.bold(eid), Color.bold(d)))
+                    print("No data for {} in directory {}".format(Color.bold(groupname), Color.bold(d)))
                 continue
             except QuotaFileError:
                 if not args.r:
@@ -368,7 +343,7 @@ def main():
 
             founddir = founddir + 1
             if not args.r and founddir == 1:
-                print("Quotas for {} {}".format(entity, Color.bold(eid)))
+                print("Quotas for: {}".format(Color.bold(groupname)))
             if args.r:
                 dwarn, fwarn = quota.return_warnings()
                 if dwarn == 'red':
