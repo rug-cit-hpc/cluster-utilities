@@ -22,7 +22,7 @@ hbquota - shows user's quota for all Hábrók file systems, and presents this in
 
 %install
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-install hbquota $RPM_BUILD_ROOT/usr/bin/hbquota
+install hbquota/hbquota $RPM_BUILD_ROOT/usr/bin/hbquota
 
 %files
 
