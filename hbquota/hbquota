@@ -150,7 +150,11 @@ class Quota:
                     self.fusage, type(self.fusage), self.falloc, type(self.falloc), self.flimit, type(self.flimit),
                     self.dgrace, type(self.dgrace), self.fgrace, type(self.fgrace)))
             print(Color.red("End Debug object variables"))
-        self.bar = percent_bar(float((float(self.dusage) / float(self.dalloc)) * 100))
+        if self.dalloc > 0:
+           percentage = float((float(self.dusage) / float(self.dalloc)) * 100)
+        else:
+           percentage = 0.0
+        self.bar = percent_bar(percentage)
         # some more empty internal variables
         self._warn_use = None
         self._warn_files = None
@@ -252,16 +256,16 @@ class Quota:
 
     def gen_warnings(self):
         # data warnings
-        if self.dusage > self.dalloc:
-            self._warn_use = 'red'
-        elif float(float(float(self.dalloc) - float(self.dusage)) / float(self.dalloc)) < 0.06:
-            self._warn_use = 'warn'
-        else:
-            self._warn_use = 'blue'
+        self._warn_use = 'blue'
+        if self.dalloc > 0:
+          if self.dusage > self.dalloc:
+              self._warn_use = 'red'
+          elif float(float(float(self.dalloc) - float(self.dusage)) / float(self.dalloc)) < 0.06:
+              self._warn_use = 'warn'
         # file warnings
         self._warn_files = 'blue'
-        if self.falloc != NA_value:
-           if self.fusage > self.falloc and self.falloc > 0:
+        if self.falloc != NA_value and self.falloc > 0:
+           if self.fusage > self.falloc:
                self._warn_files = 'red'
            elif float(float(float(self.falloc) - float(self.fusage)) / float(self.falloc) < 0.06):
                self._warn_files = 'warn'
