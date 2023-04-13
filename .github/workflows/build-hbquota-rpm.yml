@@ -21,7 +21,7 @@ jobs:
 
       - name: Build the RPM package
         id: rpm
-        uses: naveenrajm7/rpmbuild@c0ba5e8840e67c7a651f2b40485dcbfd15de3e2f
+        uses: naveenrajm7/rpmbuild@master
         with:
           spec_file: "hbquota/hbquota.spec"
 
