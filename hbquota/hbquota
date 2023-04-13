@@ -317,12 +317,11 @@ def main():
     gid = getgid()
     groups = getgrouplist(username, gid)
 
-    # Resolve real location of home directory, ignoring symlinks
-    # We could also check the location, but I don't like calling df like functionality,
-    # and we need internal system knowledge anyway.
-    homefs = str(Path(*Path.home().resolve().parts[:2]))
     directories = [
-        homefs,
+        '/home1',
+        '/home2',
+        '/home3',
+        '/home4',
         '/projects',
         '/scratch'
     ]
