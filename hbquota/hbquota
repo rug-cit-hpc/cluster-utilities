@@ -66,6 +66,9 @@ class QuotaFileError(Exception):
 class UnsupportedFsType(Exception):
     pass
 
+class MissingFsDirectory(Exception):
+    pass
+
 
 def percent_bar(percent):
     # Makes a string that when printed shows a percentage bar
@@ -130,6 +133,9 @@ class Quota:
     def __init__(self, group, directory, debug_flag):
         self.group = group
         self.directory = directory
+
+        if not path.isdir(path.join(self.directory, gname(group))):
+           raise MissingFsDirectory
 
         if fs_type[self.directory] == 'lustre_g':
            self.quota_lustre('-g', debug_flag)
@@ -338,7 +344,7 @@ def main():
             eid, entity = process_entity(g)
             if entity == 'user group':
                 eid = gname(eid)
-            print("Quotas for {} {}".format(entity, Color.bold(eid)))
+        founddir = 0
         for d in directories:
             try:
                 quota = Quota(g, d, args.d)
@@ -358,6 +364,12 @@ def main():
                 if not args.r:
                     print("Unsupported file system type for {}".format(Color.bold(d)))
                 continue
+            except MissingFsDirectory:
+                continue
+
+            founddir = founddir + 1
+            if not args.r and founddir == 1:
+                print("Quotas for {} {}".format(entity, Color.bold(eid)))
             if args.r:
                 dwarn, fwarn = quota.return_warnings()
                 if dwarn == 'red':
