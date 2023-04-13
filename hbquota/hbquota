@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import subprocess, argparse, grp
 from getpass import getuser
-from os import getgid, getgrouplist
+from os import getgid, getgrouplist, statvfs, path
 from pathlib import Path
 
 NA_value = 'N/A'
@@ -209,15 +209,17 @@ class Quota:
         except:
            raise(QuotaFileError)
 
-    def quota_xfsnfs(self,debug_flag):
-        self.dusage = 0
-        self.dalloc = 1
-        self.dlimit = 0
+    def quota_xfsnfs(self, debug_flag):
+        quotapath = path.join(self.directory,gname(self.group))
+        usage_info = statvfs(path.join(self.directory,gname(self.group)))
+        self.dusage = (usage_info.f_blocks - usage_info.f_bavail) * usage_info.f_frsize
+        self.dalloc = usage_info.f_blocks * usage_info.f_frsize
+        self.dlimit = usage_info.f_blocks * usage_info.f_frsize
         self.dgrace = NA_value
-        self.fusage = 0
-        self.falloc = 1
-        self.flimit = 0
-        self.fgrace = 0
+        self.fusage = usage_info.f_files - usage_info.f_favail
+        self.falloc = usage_info.f_files
+        self.flimit = usage_info.f_files
+        self.fgrace = NA_value
         return
 
     def check_raw(self):
