@@ -1,0 +1,371 @@
+#!/usr/bin/python3
+import subprocess, argparse, grp
+from getpass import getuser
+from os import getgid, getgrouplist
+from pathlib import Path
+
+NA_value = 'N/A'
+
+fs_type = {
+   '/home'    : 'lustre',
+   '/home2'   : 'zfsnfs',
+   '/data'    : 'lustre',
+   '/scratch' : 'lustre',
+}
+
+
+class Color():
+    colors = {
+        'blue': '\033[94m',  # some terminals don't support this so it just looks 'normal'
+        'red': '\033[91m',
+        'bold': '\033[1m',
+        'warn': '\033[93m',  # not sure yet what colour this is
+        'end': '\033[0m'  # if this isn't at the end of the string, the formatting can overflow onto more lines of text
+    }
+
+    @staticmethod
+    def blue(msg):
+        return Color.w_color(msg, "blue")
+
+    @staticmethod
+    def red(msg):
+        return Color.w_color(msg, "red")
+
+    @staticmethod
+    def bold(msg):
+        return Color.w_color(msg, "bold")
+
+    @staticmethod
+    def warn(msg):
+        return Color.w_color(msg, "warn")
+
+    @staticmethod
+    def w_color(msg, color):
+        final = "{}{}{}".format(Color.colors.get(color), msg, Color.colors.get("end"))
+        return final
+
+
+# Some evil global variables
+t_width = int(subprocess.check_output(['tput',
+                                       'cols']))  # checks terminal width, this should not change throughout program operation (because it should take less than 0.1 sec to run)
+
+
+# define custom exceptions here
+class PermissionError(Exception):
+    pass
+
+
+class DataError(Exception):
+    pass
+
+class QuotaFileError(Exception):
+    pass
+
+class UnsupportedFsType(Exception):
+    pass
+
+
+def percent_bar(percent):
+    # Makes a string that when printed shows a percentage bar
+    bar = ""  # empty string
+    fill = '#'  # the fill character
+    empty = '='  # the empty character
+    warning = "!!!"
+    ok = "   "
+    b_width = t_width
+    if b_width > 60:
+        # bar is limited to a width of 60 characters because massive bars looks terrible
+        b_width = 60
+    b_width = b_width - 5  # some padding for the number
+    if percent <= 10:
+        b_width -= 2
+    elif percent >= 100:
+        b_width -= 4
+    else:
+        b_width -= 3
+    comp = float(100 - percent)
+    if comp < 1:
+        comp = 1
+    # b_width is now known, now we split into 'full' and 'empty'
+    empty_w = int(b_width * (comp / 100))  # Truncating because bar width is in int
+    full_w = b_width - empty_w  # determining empty first means we round down empty space rather than full
+    bar = bar + (fill * full_w) + (empty * (empty_w - 1))
+    if percent <= 100:
+        bar += ok
+    else:
+        bar += warning
+    num_string = " " + str(int(percent)) + "% "
+    bar += num_string
+    return bar
+
+def convert_bytes(num):
+    # this function will convert bytes to MiB.... GiB... etc
+    step_unit = 1024
+
+    for x in ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']:
+        if num < step_unit:
+            return "{:.1f} {}".format(num, x)
+        num /= step_unit
+    return "{:.1f} {}".format(num, 'PiB')
+
+def strip_star(item):
+    # Removes the * from the end of a string if it is there
+    if item[-1] == '*':
+        return item[:-1]
+    else:
+        return item
+
+def date_pretty(date_string):
+    # TODO: Implement this
+    # Prints the time remaining a little prettier than XXdXXhXXmXXs
+    pass
+
+
+class Quota:
+    # Lets try this implementation
+    # Create an object that contains all quota information for one directory for one user
+    # Then we can print it or not
+    def __init__(self, group, directory, debug_flag):
+        self.group = group
+        self.directory = directory
+       
+        if fs_type[self.directory] == 'lustre':
+           self.quota_lustre(debug_flag)
+        elif fs_type[self.directory] == 'zfsnfs':
+           self.quota_zfsnfs(debug_flag)
+        else:
+           raise UnsupportedFsType
+
+        if debug_flag:
+            print(Color.red("Debug object variables"))
+            print(
+                "Disk Usage: {}	{}\nDisk Allocated: {}	{}\nDisk Limit: {}	{}\nFile Usage: {}	{}\nFile Allocated: {}	{}\nFile Limit: {}	{}\nDisk Grace: {}	{}\nFile Grace: {}	{}".format(
+                    self.dusage, type(self.dusage), self.dalloc, type(self.dalloc), self.dlimit, type(self.dlimit),
+                    self.fusage, type(self.fusage), self.falloc, type(self.falloc), self.flimit, type(self.flimit),
+                    self.dgrace, type(self.dgrace), self.fgrace, type(self.fgrace)))
+            print(Color.red("End Debug object variables"))
+        self.bar = percent_bar(float((float(self.dusage) / float(self.dalloc)) * 100))
+        # some more empty internal variables
+        self._warn_use = None
+        self._warn_files = None
+        # functions to call
+        self.gen_warnings()
+
+    def quota_lustre(self,debug_flag):
+        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory)]).decode(
+            "utf-8")
+        if debug_flag:
+            print(Color.red("Debug Raw"))
+            print(self.raw)
+            print(Color.red("End of Debug Raw"))
+        self.check_raw()  # check the raw for errors before further processing
+        # Initialize here just so we keep track of what's available in the object
+        self.ref = [i for i in self.raw.split('\n')[2].split(' ') if i]
+        self.dusage = int(strip_star(self.ref[1]))*1024
+        self.dalloc = int(strip_star(self.ref[2]))*1024
+        self.dlimit = int(strip_star(self.ref[3]))*1024
+        self.dgrace = self.ref[4]
+        if self.dgrace == "none":
+            self.dgrace = self.dgrace.upper()
+        self.fusage = int(strip_star(self.ref[5]))
+        self.falloc = int(self.ref[6])
+        self.flimit = int(self.ref[7])
+        self.fgrace = self.ref[8]
+        if self.fgrace == "none":
+            self.fgrace = self.fgrace.upper()
+        self.sanity_check()
+
+
+    def quota_zfsnfs(self,debug_flag):
+        filename = Path(self.directory) / '.quota'
+        try:
+           with open(filename) as f:
+              for line in f:
+                 fields = line.strip().split();
+                 if str(fields[2]) == str(self.group):
+                    self.dusage = int(fields[3])
+                    self.dalloc = int(fields[4])
+                    self.dlimit = int(fields[4])
+                    self.dgrace = NA_value
+                    self.fusage = int(fields[5])
+                    self.falloc = int(fields[6])
+                    if self.falloc == 0:
+                       self.falloc = NA_value
+                    self.flimit = int(fields[6])
+                    if self.flimit == 0:
+                       self.flimit = NA_value
+                    self.fgrace = NA_value
+                    break
+           self.sanity_check()
+        except:
+           raise(QuotaFileError)
+
+    def check_raw(self):
+        # checks for messages like "Permission denied."
+        if self.raw == 'Permission denied.':
+            raise PermissionError()
+
+    def sanity_check(self):
+        # check if there even is a quota for this user group otherwise raise exception
+        if self.dalloc in {None, '0'} or self.falloc in {None, '0'}:
+            raise DataError()
+
+    def gen_warnings(self):
+        # data warnings
+        if self.dusage > self.dalloc:
+            self._warn_use = 'red'
+        elif float(float(float(self.dalloc) - float(self.dusage)) / float(self.dalloc)) < 0.06:
+            self._warn_use = 'warn'
+        else:
+            self._warn_use = 'blue'
+        # file warnings
+        self._warn_files = 'blue'
+        if self.falloc != NA_value:
+           if self.fusage > self.falloc and self.falloc > 0:
+               self._warn_files = 'red'
+           elif float(float(float(self.falloc) - float(self.fusage)) / float(self.falloc) < 0.06):
+               self._warn_files = 'warn'
+
+    def full_print(self):
+        # print directory
+        print(Color.bold(self.directory))
+        # print bar
+        print(Color.bold(Color.w_color(self.bar, self._warn_use)))
+        print("  Quota:	{}".format(convert_bytes(self.dalloc)))
+        print("  Hard Limit:	{}".format(convert_bytes(self.dlimit)))
+        print(Color.w_color("  Usage:\t{}".format(convert_bytes(self.dusage)), self._warn_use))
+        print("  File Quota:	{}".format(self.falloc))
+        print("  File Limit:	{}".format(self.flimit))
+        print(Color.w_color("  Files:\t{}".format(self.fusage), self._warn_use))
+        if self._warn_use == 'red' and self.dgrace != '-':
+            print(Color.w_color(
+                "You have exceeded your storage limit of {}. Please reduce your storage usage below this limit or contact the system administrator to increase it within {}.".format(
+                    convert_bytes(self.dalloc), self.dgrace), self._warn_use))
+            if self.dgrace == "NONE":
+                print(Color.w_color(
+                    "You have exceeded your grace period. You will be unable to write additional files to {} until you reduce storage usage below {}.".format(
+                        self.directory, self.dalloc), self._warn_use))
+        if self._warn_files == 'red' and self.fgrace != '-':
+            print(Color.w_color(
+                "You have exceeded your file limit of {}. Please reduce the number of files below this limit or contact the system administrator to increase it within {}.".format(
+                    self.falloc, self.fgrace), self._warn_files))
+            if self.fgrace == "NONE":
+                print(Color.w_color(
+                    "You have exceeded your grace period. You will be unable to write additional files to {} until you reduce file usage below {}.".format(
+                        self.directory, self.falloc), self._warn_use))
+
+    def return_warnings(self):
+        return self._warn_use, self._warn_files
+
+
+def process_entity(group_id):
+    # if possible, extracts username from group id, otherwise returns the value back unchanged
+    gid = str(group_id)  # we don't really need it as an int at any point
+    if gid[:2] == '10':
+        entity = 'user'
+        eid = 'p' + gid[2:]
+    elif gid[:2] == '20':
+        entity = 'user'
+        eid = 'f' + gid[2:]
+    elif gid[:1] == '3':
+        entity = 'user'
+        eid = 's' + gid[1:]
+    elif gid[:1] == '4':
+        entity = 'guest user'
+        eid = 'g'
+    else:
+        entity = 'user group'
+        eid = gid
+    return eid, entity
+
+
+def gname(gid):
+    # A wrapper function for grp
+    return grp.getgrgid(gid).gr_name
+
+
+def main():
+    username = getuser()
+    gid = getgid()
+    groups = getgrouplist(username, gid)
+
+    # Resolve real location of home directory, ignoring symlinks
+    # We could also check the location, but I don't like calling df like functionality,
+    # and we need internal system knowledge anyway.
+    homefs = str(Path(*Path.home().resolve().parts[:2]))
+    directories = [
+        homefs,
+        '/data',
+        '/scratch'
+    ]
+
+    parser = argparse.ArgumentParser()
+    # mutex = parser.add_mutually_exclusive_group()
+    # mutex.add_argument('-u',type=str,help="Specify user. Only prints quota for specified user's own group.",const=groups)
+    # mutex.add_argument('-g',type=str,help="Specify group. Only prints quota for specified group.",const=groups,nargs='?')
+    parser.add_argument('-r', help="Only output quota info if user is close to limit or above quota",
+                        action="store_true")
+    parser.add_argument('-a', help="Produces output for all groups a user is in, not just the default.",
+                        action="store_true")
+    parser.add_argument('-d',
+                        help="Produce debugging output. Please note this is for developer use and likely prints utter gibberish",
+                        action="store_true")
+    args = parser.parse_args()
+    for g in groups:
+        if not args.r:
+            eid, entity = process_entity(g)
+            if entity == 'user group':
+                eid = gname(eid)
+            print("Quotas for {} {}".format(entity, Color.bold(eid)))
+        for d in directories:
+            try:
+                quota = Quota(g, d, args.d)
+            except PermissionError:
+                if not args.r:
+                    print("You do not have permission to list quota for {} {}".format(entity, Color.bold(eid)))
+                continue
+            except DataError:
+                if not args.r:
+                    print("No data for {} {} in directory {}".format(entity, Color.bold(eid), Color.bold(d)))
+                continue
+            except QuotaFileError:
+                if not args.r:
+                    print("Error reading quota file for {}".format(Color.bold(d)))
+                continue
+            except UnsupportedFsType:
+                if not args.r:
+                    print("Unsupported file system type for {}".format(Color.bold(d)))
+                continue
+            if args.r:
+                dwarn, fwarn = quota.return_warnings()
+                if dwarn == 'red':
+                    if quota.dgrace == "NONE":
+                        # You can't neatly nest colored sequences because the 'end' character will end all non-standard colors, so we have to split it up by parts.
+                        print(Color.w_color("You have exceeded your storage quota on the {}".format(d), dwarn),
+                              Color.w_color(
+                                  " filesystem and your grace period is over. Please reduce usage below {} or contact system administrator.".format(
+                                      quota.dalloc), dwarn))
+                    else:
+                        print(Color.w_color("You have exceeded your storage quota on the {}".format(d), dwarn),
+                              Color.w_color(" filesystem, please reduce usage within {}.".format(quota.dgrace), dwarn))
+                elif dwarn == 'warn':
+                    # print("You have less than 5{} of your allocated storage remaining on the {} filesystem.".format(str('%'),d))
+                    print(Color.bold(
+                        "You have less than 5%% of your allocated storage remaining on the {} filesystem.".format(d)))
+                if fwarn == 'red':
+                    if quota.fgrace == "NONE":
+                        print(Color.w_color("You have exceeded your file quota on the {}".format(d), fwarn), Color.w_color(
+                            " filesystem and your grace period is over. Please reduce usage below {} files or contact the system administrator.".format(
+                                quota.falloc), fwarn))
+                    else:
+                        print(Color.w_color("You have exceeded your file quota on the {}".format(d), fwarn),
+                              Color.w_color(" filesystem, please reduce usage within {}.".format(quota.fgrace), fwarn))
+            else:
+                quota.full_print()
+        # reached the end of the first loop.
+        if not args.a:
+            # exit if we've printed the first group (should always be the user first)
+            break
+
+
+main()
