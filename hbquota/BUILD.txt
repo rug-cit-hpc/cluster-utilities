@@ -1,13 +1,15 @@
 Run the following in the root of the git checkout:
 
-export VERSION=$(grep "Version" pgquota/pgquota.spec | cut -f 2)
+export VERSION=$(grep "Version" hbquota/hbquota.spec | awk '{print $2}')
 
 mkdir -p ~/rmpbuild/SOURCES
-mkdir /tmp/pgquota-${VERSION}
-cp pgquota/pgquota /tmp/pgquota-${VERSION}
-tar czf ~/rpmbuild/SOURCES/gquota-${VERSION}.tar.gz /tmp/pgquota-${VERSION}
-rm -rf /tmp/pgquota-${VERSION}
+mkdir /tmp/hbquota-${VERSION}
+cp hbquota/hbquota /tmp/hbquota-${VERSION}
+pushd /tmp
+tar czf ~/rpmbuild/SOURCES/hbquota-${VERSION}.tar.gz hbquota-${VERSION}
+popd
+rm -rf /tmp/hbquota-${VERSION}
 
-rpmbuild -ba pgquota/pgquota.spec
+rpmbuild -ba hbquota/hbquota.spec
 
 # resulting RPM can be found in ~/rpmbuild/RPMS/noarch/
