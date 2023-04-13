@@ -1,16 +1,16 @@
-name: Build pgquota RPM package
+name: Build hbquota RPM package
 
 on:
   push:
     branches:
       - master
     paths:
-      - pgquota/*
+      - hbquota/*
   pull_request:
     branches:
       - master
     paths:
-      - pgquota/*
+      - hbquota/*
 
 jobs:
   build-rpm:
@@ -21,12 +21,12 @@ jobs:
 
       - name: Build the RPM package
         id: rpm
-        uses: naveenrajm7/rpmbuild@c0ba5e8840e67c7a651f2b40485dcbfd15de3e2f
+        uses: naveenrajm7/rpmbuild@master
         with:
-          spec_file: "pgquota/pgquota.spec"
+          spec_file: "hbquota/hbquota.spec"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: pgquota RPM
+          name: hbquota RPM
           path: ${{ steps.rpm.outputs.rpm_dir_path }}

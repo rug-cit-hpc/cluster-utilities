@@ -1,0 +1,15 @@
+Run the following in the root of the git checkout:
+
+export VERSION=$(grep "Version" hbquota/hbquota.spec | awk '{print $2}')
+
+mkdir -p ~/rmpbuild/SOURCES
+mkdir /tmp/hbquota-${VERSION}
+cp hbquota/hbquota /tmp/hbquota-${VERSION}
+pushd /tmp
+tar czf ~/rpmbuild/SOURCES/hbquota-${VERSION}.tar.gz hbquota-${VERSION}
+popd
+rm -rf /tmp/hbquota-${VERSION}
+
+rpmbuild -ba hbquota/hbquota.spec
+
+# resulting RPM can be found in ~/rpmbuild/RPMS/noarch/

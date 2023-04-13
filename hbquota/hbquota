@@ -1,16 +1,18 @@
 #!/usr/bin/python3
 import subprocess, argparse, grp
 from getpass import getuser
-from os import getgroups
+from os import getgid, getgrouplist, statvfs, path
 from pathlib import Path
 
 NA_value = 'N/A'
 
 fs_type = {
-   '/home'    : 'lustre',
-   '/home2'   : 'zfsnfs',
-   '/data'    : 'lustre',
-   '/scratch' : 'lustre',
+   '/home1'    : 'xfsnfs',
+   '/home2'    : 'xfsnfs',
+   '/home3'    : 'xfsnfs',
+   '/home4'    : 'xfsnfs',
+   '/projects' : 'lustre_p',
+   '/scratch'  : 'lustre_p',
 }
 
 
@@ -62,6 +64,9 @@ class QuotaFileError(Exception):
     pass
 
 class UnsupportedFsType(Exception):
+    pass
+
+class MissingFsDirectory(Exception):
     pass
 
 
@@ -125,14 +130,21 @@ class Quota:
     # Lets try this implementation
     # Create an object that contains all quota information for one directory for one user
     # Then we can print it or not
-    def __init__(self, group, directory, debug_flag):
+    def __init__(self, group, groupname, directory, debug_flag):
         self.group = group
         self.directory = directory
-       
-        if fs_type[self.directory] == 'lustre':
-           self.quota_lustre(debug_flag)
+
+        if not path.isdir(path.join(self.directory, groupname)):
+           raise MissingFsDirectory
+
+        if fs_type[self.directory] == 'lustre_g':
+           self.quota_lustre('-g', debug_flag)
+        elif fs_type[self.directory] == 'lustre_p':
+           self.quota_lustre('-p', debug_flag)
         elif fs_type[self.directory] == 'zfsnfs':
            self.quota_zfsnfs(debug_flag)
+        elif fs_type[self.directory] == 'xfsnfs':
+           self.quota_xfsnfs(debug_flag)
         else:
            raise UnsupportedFsType
 
@@ -144,15 +156,19 @@ class Quota:
                     self.fusage, type(self.fusage), self.falloc, type(self.falloc), self.flimit, type(self.flimit),
                     self.dgrace, type(self.dgrace), self.fgrace, type(self.fgrace)))
             print(Color.red("End Debug object variables"))
-        self.bar = percent_bar(float((float(self.dusage) / float(self.dalloc)) * 100))
+        if self.dalloc > 0:
+           percentage = float((float(self.dusage) / float(self.dalloc)) * 100)
+        else:
+           percentage = 0.0
+        self.bar = percent_bar(percentage)
         # some more empty internal variables
         self._warn_use = None
         self._warn_files = None
         # functions to call
         self.gen_warnings()
 
-    def quota_lustre(self,debug_flag):
-        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory)]).decode(
+    def quota_lustre(self, quota_type, debug_flag):
+        self.raw = subprocess.check_output(['lfs', 'quota', quota_type, str(self.group), str(self.directory)]).decode(
             "utf-8")
         if debug_flag:
             print(Color.red("Debug Raw"))
@@ -174,7 +190,6 @@ class Quota:
         if self.fgrace == "none":
             self.fgrace = self.fgrace.upper()
         self.sanity_check()
-
 
     def quota_zfsnfs(self,debug_flag):
         filename = Path(self.directory) / '.quota'
@@ -200,6 +215,19 @@ class Quota:
         except:
            raise(QuotaFileError)
 
+    def quota_xfsnfs(self, debug_flag):
+        quotapath = path.join(self.directory,gname(self.group))
+        usage_info = statvfs(path.join(self.directory,gname(self.group)))
+        self.dusage = (usage_info.f_blocks - usage_info.f_bavail) * usage_info.f_frsize
+        self.dalloc = usage_info.f_blocks * usage_info.f_frsize
+        self.dlimit = usage_info.f_blocks * usage_info.f_frsize
+        self.dgrace = NA_value
+        self.fusage = usage_info.f_files - usage_info.f_favail
+        self.falloc = usage_info.f_files
+        self.flimit = usage_info.f_files
+        self.fgrace = NA_value
+        return
+
     def check_raw(self):
         # checks for messages like "Permission denied."
         if self.raw == 'Permission denied.':
@@ -212,16 +240,16 @@ class Quota:
 
     def gen_warnings(self):
         # data warnings
-        if self.dusage > self.dalloc:
-            self._warn_use = 'red'
-        elif float(float(float(self.dalloc) - float(self.dusage)) / float(self.dalloc)) < 0.06:
-            self._warn_use = 'warn'
-        else:
-            self._warn_use = 'blue'
+        self._warn_use = 'blue'
+        if self.dalloc > 0:
+          if self.dusage > self.dalloc:
+              self._warn_use = 'red'
+          elif float(float(float(self.dalloc) - float(self.dusage)) / float(self.dalloc)) < 0.06:
+              self._warn_use = 'warn'
         # file warnings
         self._warn_files = 'blue'
-        if self.falloc != NA_value:
-           if self.fusage > self.falloc and self.falloc > 0:
+        if self.falloc != NA_value and self.falloc > 0:
+           if self.fusage > self.falloc:
                self._warn_files = 'red'
            elif float(float(float(self.falloc) - float(self.fusage)) / float(self.falloc) < 0.06):
                self._warn_files = 'warn'
@@ -257,28 +285,6 @@ class Quota:
     def return_warnings(self):
         return self._warn_use, self._warn_files
 
-
-def process_entity(group_id):
-    # if possible, extracts username from group id, otherwise returns the value back unchanged
-    gid = str(group_id)  # we don't really need it as an int at any point
-    if gid[:2] == '10':
-        entity = 'user'
-        eid = 'p' + gid[2:]
-    elif gid[:2] == '20':
-        entity = 'user'
-        eid = 'f' + gid[2:]
-    elif gid[:1] == '3':
-        entity = 'user'
-        eid = 's' + gid[1:]
-    elif gid[:1] == '4':
-        entity = 'guest user'
-        eid = 'g'
-    else:
-        entity = 'user group'
-        eid = gid
-    return eid, entity
-
-
 def gname(gid):
     # A wrapper function for grp
     return grp.getgrgid(gid).gr_name
@@ -286,15 +292,17 @@ def gname(gid):
 
 def main():
     username = getuser()
-    groups = getgroups()
+    # Get list of groups based on username and gid, to make sure the primary group is listed first.
+    gid = getgid()
+    groups = getgrouplist(username, gid)
 
-    # Resolve real location of home directory, ignoring symlinks
-    # We could also check the location, but I don't like calling df like functionality,
-    # and we need internal system knowledge anyway.
-    homefs = str(Path(*Path.home().resolve().parts[:2]))
+    # We loop over all directories for home as group home directories may exist somewhere
     directories = [
-        homefs,
-        '/data',
+        '/home1',
+        '/home2',
+        '/home3',
+        '/home4',
+        '/projects',
         '/scratch'
     ]
 
@@ -311,21 +319,18 @@ def main():
                         action="store_true")
     args = parser.parse_args()
     for g in groups:
-        if not args.r:
-            eid, entity = process_entity(g)
-            if entity == 'user group':
-                eid = gname(eid)
-            print("Quotas for {} {}".format(entity, Color.bold(eid)))
+        groupname = gname(g)
+        founddir = 0
         for d in directories:
             try:
-                quota = Quota(g, d, args.d)
+                quota = Quota(g, groupname, d, args.d)
             except PermissionError:
                 if not args.r:
-                    print("You do not have permission to list quota for {} {}".format(entity, Color.bold(eid)))
+                    print("You do not have permission to list quota for {}".format(Color.bold(groupname)))
                 continue
             except DataError:
                 if not args.r:
-                    print("No data for {} {} in directory {}".format(entity, Color.bold(eid), Color.bold(d)))
+                    print("No data for {} in directory {}".format(Color.bold(groupname), Color.bold(d)))
                 continue
             except QuotaFileError:
                 if not args.r:
@@ -335,6 +340,12 @@ def main():
                 if not args.r:
                     print("Unsupported file system type for {}".format(Color.bold(d)))
                 continue
+            except MissingFsDirectory:
+                continue
+
+            founddir = founddir + 1
+            if not args.r and founddir == 1:
+                print("Quotas for: {}".format(Color.bold(groupname)))
             if args.r:
                 dwarn, fwarn = quota.return_warnings()
                 if dwarn == 'red':

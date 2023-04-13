@@ -1,7 +1,7 @@
-Name:      pgquota
-Version:   1.3
-Release:   2%{?dist}
-Summary:   Shows user file and data quotas per Peregrine file system
+Name:      hbquota
+Version:   2.0
+Release:   1%{?dist}
+Summary:   Shows user file and data quotas per Hábrók file system
 
 Group:     System Environment/Base
 License:   MIT
@@ -13,7 +13,7 @@ Requires:  python3
 
 
 %description
-pgquota - shows user's quota for all Peregrine file systems, and presents this information in a nicely readable format.
+hbquota - shows user's quota for all Hábrók file systems, and presents this information in a nicely readable format.
 
 %prep
 %setup -q
@@ -22,18 +22,20 @@ pgquota - shows user's quota for all Peregrine file systems, and presents this i
 
 %install
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-install pgquota/pgquota $RPM_BUILD_ROOT/usr/bin/pgquota
+install hbquota/hbquota $RPM_BUILD_ROOT/usr/bin/hbquota
 
 %files
 
 #%doc
 
-/usr/bin/pgquota
+/usr/bin/hbquota
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Thu Apr 13 2023 Fokke Dijkstra <f.dijkstra@rug.nl> - 2.0-1
+- Updated pgquota to work as hbquota on the new Hábrók cluster
 * Wed Apr 13 2022 Fokke Dijkstra <f.dijkstra@rug.nl> - 1.3-2
 - Fixed a regression where the * was no longer removed from
   out of quota numbers reported by Lustre.
