@@ -186,7 +186,7 @@ class Quota:
         self.sanity_check()
 
     def quota_lustre_p(self,debug_flag):
-        self.raw = subprocess.check_output(['lfs', 'quota', '-g', str(self.group), str(self.directory)]).decode(
+        self.raw = subprocess.check_output(['lfs', 'quota', '-p', str(self.group), str(self.directory)]).decode(
             "utf-8")
         if debug_flag:
             print(Color.red("Debug Raw"))
