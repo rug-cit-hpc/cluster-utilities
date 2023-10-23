@@ -2,9 +2,9 @@
 
 This page gives an overview of scientific papers that have been produced based on work performed on the Hábrók, Peregrine and Millipede compute clusters of the University of Groningen, or computing work that has been supported by staff of the HPC team of the Center of Information Technology of the university.
 
-If you want to acknowledge the use of the Peregrine cluster and the support of the CIT in your papers you can use the following acknowledgement:\\
+If you want to acknowledge the use of the Hábrók cluster and the support of the CIT in your papers you can use the following acknowledgement:\\
 > We thank the Center for Information Technology of the University of Groningen for their support and for providing access to the Hábrók high performance computing cluster.
 
-This list has been first constructed in February 2016, many older papers are therefore not reported. It also relies on input from the individual researchers and will therefore also not be complete. If you want to have your paper(s) added to this list, please send them to [[hpc@rug.nl]].
+This list has been first constructed in February 2016, many older papers are therefore not reported. It also relies on input from the individual researchers and will therefore also not be complete. If you want to have your paper(s) added to this list, please send the references (preferrably DOI) to [[hpc@rug.nl]].
 
 ----
