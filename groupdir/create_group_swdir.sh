@@ -41,3 +41,7 @@ else
    echo "Set inode quota to ${3}"
    ssh 172.23.15.207 sudo xfs_quota -x -c \'limit -p isoft=${3} ihard=${3} ${gid}\' /nfs
 fi
+# Add and remove a file to make the default quota visible, which are displayed as 0 otherwise
+# This is not fully understood.
+sudo touch /userapps/${groupname}/.quota_testfile
+sudo rm /userapps/${groupname}/.quota_testfile
