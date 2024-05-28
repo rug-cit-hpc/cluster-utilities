@@ -36,8 +36,8 @@ else
 fi
 if [ -z $3 ]; then
    echo "Set inode quota to defaults"
-   ssh 172.23.15.207 sudo xfs_quota -x -c \'limit -p isoft=0 bhard=0 ${gid}\' /nfs
+   ssh 172.23.15.207 sudo xfs_quota -x -c \'limit -p isoft=0 ihard=0 ${gid}\' /nfs
 else
    echo "Set inode quota to ${3}"
-   ssh 172.23.15.207 sudo xfs_quota -x -c \'limit -p isoft=${3} bhard=${3} ${gid}\' /nfs
+   ssh 172.23.15.207 sudo xfs_quota -x -c \'limit -p isoft=${3} ihard=${3} ${gid}\' /nfs
 fi
