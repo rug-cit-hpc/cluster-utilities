@@ -4,6 +4,7 @@ import os
 import sys
 import lustre_quota as lq
 
+dry_run = True
 force_quota = False
 
 def get_gids_from_directories(path):
@@ -25,8 +26,11 @@ def copy_quota(account, quota_type, source_fs, dest_fs):
    if dest_quota == source_quota:
        print('Same quota on both file systems')
    elif not dest_quota.quota_exist() or force_quota:
-       source_quota.set_quota(account, dest_fs, quota_type)
-       print('Transferred quota')
+       if dry_run:
+           print('Dry-run: would have transferred quota')
+       else:
+           source_quota.set_quota(account, dest_fs, quota_type)
+           print('Transferred quota')
    else:
        print('Different quota already set on destination')
 
