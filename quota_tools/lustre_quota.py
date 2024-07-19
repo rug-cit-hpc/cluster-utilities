@@ -44,8 +44,8 @@ class LustreQuota:
                self.inode_soft == other.inode_soft and \
                self.inode_hard == other.inode_hard
 
-    def zero_quota(self):
-        return self.block_soft == self.block_hard == self.inode_soft == self.inode_hard == 0
+    def quota_exist(self):
+        return not self.block_soft == self.block_hard == self.inode_soft == self.inode_hard == 0
 
     def set_quota(self, account, file_system, quota_type):
         cmdline = [self.lfscmd, 'setquota', self.quota_flag[quota_type], account, 
