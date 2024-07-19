@@ -17,18 +17,18 @@ def get_gids_from_directories(path):
 def copy_quota(account, quota_type, source_fs, dest_fs):
    account = str(account)
    source_quota = lq.LustreQuota.get_quota(account, source_fs, quota_type)
-   print('Copying quota for %s from %s to %s: bsoft:%i bhard:%i isoft:%s ihard:%s' % 
+   print('Copying quota for %s from %s to %s: bsoft:%i bhard:%i isoft:%s ihard:%s : ' %
          (account, source_fs, dest_fs, 
           source_quota.block_soft, source_quota.block_hard, 
-          source_quota.inode_soft, source_quota.inode_hard))
+          source_quota.inode_soft, source_quota.inode_hard), end = '')
    dest_quota = lq.LustreQuota.get_quota(account, dest_fs, quota_type)
    if dest_quota == source_quota:
-       print('- Quota are the same on both file systems')
+       print('Same quota on both file systems')
    elif not dest_quota.quota_exist() or force_quota:
        source_quota.set_quota(account, dest_fs, quota_type)
-       print('- Transferred quota between the file systems')
+       print('Transferred quota')
    else:
-       print('- Different quota already set on %s' % dest_fs)
+       print('Different quota already set on destination')
 
 # Check if right number of arguments has been provided
 if len(sys.argv) < 3 or len(sys.argv) > 4:
