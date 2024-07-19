@@ -38,6 +38,15 @@ class LustreQuota:
         return cls(int(quota[1]), int(quota[2]), int(quota[3]), 
                    int(quota[5]), int(quota[6]), int(quota[7]))
 
+    def __eq__(self, other):
+        return self.block_soft == other.block_soft and \
+               self.block_hard == other.block_hard and \
+               self.inode_soft == other.inode_soft and \
+               self.inode_hard == other.inode_hard
+
+    def zero_quota(self):
+        return self.block_soft == self.block_hard == self.inode_soft == self.inode_hard == 0
+
     def set_quota(self, account, file_system, quota_type):
         cmdline = [self.lfscmd, 'setquota', self.quota_flag[quota_type], account, 
                    '-b', str(self.block_soft), '-B', str(self.block_hard), 
