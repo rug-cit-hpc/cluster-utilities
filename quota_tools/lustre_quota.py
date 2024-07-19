@@ -29,12 +29,15 @@ class LustreQuota:
         if exit_code !=0:
             print('Error: Problem reading quota.')
             sys.exit(-1)
-        quotaline = output.splitlines()[-1].decode('ASCII')
-        if file_system not in quotaline:
+        quota_found = False
+        for line in output.decode('ASCII').splitlines():
+            if file_system in line:
+                quota_found =  True
+                quota = [x.replace('*','') for x in line.split()]
+        if not quota_found:
             print('Error: File system: %s not in quota output.' % file_system)
-            print(quotaline)
+            print(output.decode('ASCII'))
             sys.exit(-1)
-        quota = [x.replace('*','') for x in quotaline.split()]
         return cls(int(quota[1]), int(quota[2]), int(quota[3]), 
                    int(quota[5]), int(quota[6]), int(quota[7]))
 
