@@ -61,7 +61,7 @@ class Quota:
     
     def to_kb(self):
         for key in self.quota:
-            if key in ['block_usage', 'block_limit']:
+            if key in ['block_usage', 'block_soft', 'block_hard']:
                 self.quota[key] = self.quota[key] // 1024
         return self
 
@@ -86,7 +86,7 @@ def main():
                         level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler())
     for fs in lustre_filesystems:
-        quotas.append(Quota(user, fs).get_quota().to_kb().to_json())
+        quotas.append(Quota(user, fs).get_quota().to_json())
     content = {
         'version': 1, 
         'timestamp': int(datetime.timestamp(datetime.now())), 
