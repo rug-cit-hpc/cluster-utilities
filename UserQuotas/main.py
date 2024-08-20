@@ -1,21 +1,39 @@
-import subprocess, json, os, argparse, grp
-import pandas as pd
+#!/usr/bin/env python3
+import logging
+import sys
+import json
+import os
+import grp
+
+from pwd import getpwnam
+from quota_tools.lustre_quota import LustreQuota
 from datetime import datetime
 
-
-def logwrite(string):
-    logfile = open("/admin/cristian/UserQuotas/logfile.log", "a")
-    today = datetime.today()
-    str_today = today.strftime("%Y-%m-%d %H:%M:%S")
-    logfile.write(str_today)
-    logfile.write(" {}\n".format(string))
-    logfile.close()
+lustre_filesystems = ['/projects', '/scratch']
 
 
-def strip_char(item):
-    if item[-1] == '*':
-        item = item[:-1]
-    return int(item)
+def get_home_fs(user: str) -> str:
+    """
+    Returns the home filesystem path for the given user.
+
+    Parameters:
+    user (str): The username for which to retrieve the home filesystem path.
+
+    Returns:
+    str: The home filesystem path for the given user.
+    """
+    return getpwnam(user).pw_dir
+
+
+def get_uid(user):
+    return getpwnam(user).pw_uid
+
+def get_gid(group):
+    return grp.getgrnam(group).gr_gid
+
+def get_gids(user):
+    uid = getpwnam(user).pw_uid
+    return os.getgrouplist(user, uid)
 
 
 class DataError(Exception):
@@ -23,82 +41,64 @@ class DataError(Exception):
 
 
 class Quota:
-    def __init__(self, group, directory):
+    def __init__(self, group, fs):
         self.group = group
-        self.directory = directory
-        self.raw = subprocess.check_output(['sudo', 'lfs', 'quota', '-g', str(self.group), str(self.directory)])
-        self.check_raw()  # check the raw for errors before further processing
-        # Initialize here just so we keep track of what's available in the object
-        self.ref = str(self.raw, encoding='utf-8').split('\n')[2].split()
+        self.gid = get_gid(group)
+        self.fs = fs
+        self.quota_type = 'lustre' if fs in lustre_filesystems else 'nfs'
+        self.quota = None
 
-        self.sanity_check()
-        self.dusage = int(strip_char(self.ref[1]))
-        self.dalloc = int(strip_char(self.ref[2]))
-        self.dlimit = int(strip_char(self.ref[3]))
-        self.dgrace = self.ref[4]
-        if self.ref[5][-1] == '*':
-            self.fusage = int(self.ref[5][:-1])
+    def get_quota(self):
+        logging.info(f"Retrieving quota for {grp.getgrgid(self.gid).gr_name} on {self.fs}")
+        if self.quota_type == 'lustre':
+            try:
+                self.quota = LustreQuota.get_quota(str(self.gid), self.fs, 'project').to_json()
+            except DataError as e:
+                logging.warn(f'No quota for {grp.getgrgid(self.gid).gr_name} on {self.fs}')
+            return self
         else:
-            self.fusage = int(self.ref[5])
-        self.falloc = int(self.ref[6])
-        self.flimit = int(self.ref[7])
-
-
-    def check_raw(self):
-        if self.raw == 'Permission denied.':
-            raise PermissionError()
-
-    def sanity_check(self):
-        # check if there even is a quota for this user group otherwise raise exception
-        if self.ref[2] in {None, '0'} or self.ref[6] in {None, '0'}:
-            raise DataError()
+            logging.warn(f'Quota type {self.quota_type} not supported')
+            return self
+    
+    def to_kb(self):
+        for key in self.quota:
+            if key in ['block_usage', 'block_limit']:
+                self.quota[key] = self.quota[key] // 1024
+        return self
 
     def to_json(self):
         quota = {'user': self.group,
-                 'path': self.directory + '/' + self.group,
-                 'total_block_usage': self.dusage,
-                 'block_limit': self.dalloc,
-                 'total_file_usage': self.fusage,
-                 'file_limit': self.falloc
+                 'path': self.fs + '/' + self.group,
+                 'total_block_usage': self.quota['block_usage'],
+                 'block_limit': self.quota['block_soft'],
+                 'total_file_usage': self.quota['inode_usage'],
+                 'file_limit': self.quota['inode_soft'],
                  }
         return quota
 
-
-def get_users():
-    test = subprocess.check_output(['getent', 'passwd'])
-    test = [line.split(':') for line in str(test, encoding='utf-8').split('\n')]
-    test = pd.DataFrame.from_records(test, columns=['Username', 'Passwd', 'UID', 'GID', 'Gecos', 'Home', 'Shell'])
-    return test.sort_values(by='Username')
+    
+def get_users() -> list:
+    return ['p233780']
 
 
 def main():
-    logfile = open("/admin/cristian/UserQuotas/logfile.log", "a")
-    logfile.close()
-
-    excepted_users = ['adm', 'apache', 'bin', 'centos', 'chrony', 'cristian', 'daemon', 'dbus', 'egon', 'ftp', 'games',
-                      'halt', 'lp', 'mail', 'munge', 'mysql', 'nfsnobody', 'nobody', 'nscd', 'nslcd', 'ondemand-nginx',
-                      'operator', 'polkitd', 'postfix', 'root', 'rpc', 'rpcuser', 'saslauth', 'shutdown', 'sshd',
-                      'sync', 'systemd-network', 'wim']
-    users = get_users()
-    for index, user in users.iterrows():
-        if user['Username'] in excepted_users:
-            continue
-        # logwrite(os.getgrouplist(user['Username'], int(user['GID'])))
-        quotas = []
-        for filesystem in ['/home', '/data', '/scratch']:
-            logwrite(f"INFO: Retrieving quota for {user['Username']} on {filesystem}")
-            try:
-                quota = Quota(group=user['Username'], directory=filesystem).to_json()
-                quotas.append(quota)
-            except DataError as e:
-                logwrite(f'WARN: No quota for user {user["Username"]} on {filesystem}')
-                continue
-            except subprocess.CalledProcessError as e:
-                logwrite(f'ERROR: {e}')
-                continue
-        content = {'version': 1, 'timestamp': int(datetime.timestamp(datetime.now())), 'quotas': quotas}
-        with open(f'/tmp/jsons/{user["Username"]}.json', 'w') as outfile:
-            json.dump(content, outfile, indent=4)
+    logging.basicConfig(filename='logfile.log',
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO)
+    logging.getLogger().addHandler(logging.StreamHandler())
+    user = sys.argv[1] if len(sys.argv) > 1 else None
+    quotas = []
+    user_home = get_home_fs(user)
+    for fs in lustre_filesystems:
+        quotas.append(Quota(user, fs).get_quota().to_kb().to_json())
+    content = {
+        'version': 1, 
+        'timestamp': int(datetime.timestamp(datetime.now())), 
+        'quotas': quotas
+        }
+    with open(f'{user_home}/ondemand/.quota.json', 'w') as outfile:
+        json.dump(content, outfile, indent=4)
 
 
 if __name__ == "__main__":

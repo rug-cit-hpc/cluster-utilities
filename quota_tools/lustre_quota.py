@@ -41,6 +41,16 @@ class LustreQuota:
         return cls(int(quota[1]), int(quota[2]), int(quota[3]), 
                    int(quota[5]), int(quota[6]), int(quota[7]))
 
+    def to_json(self):
+        return {
+            'block_usage': self.block_usage,
+            'block_soft': self.block_soft,
+            'block_hard': self.block_hard,
+            'inode_usage': self.inode_usage,
+            'inode_soft': self.inode_soft,
+            'inode_hard': self.inode_hard
+        }
+
     def __eq__(self, other):
         return self.block_soft == other.block_soft and \
                self.block_hard == other.block_hard and \
