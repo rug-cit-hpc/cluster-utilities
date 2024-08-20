@@ -49,7 +49,6 @@ class Quota:
         self.quota = None
 
     def get_quota(self):
-        logging.info(f"Retrieving quota for {grp.getgrgid(self.gid).gr_name} on {self.fs}")
         if self.quota_type == 'lustre':
             try:
                 self.quota = LustreQuota.get_quota(str(self.gid), self.fs, 'project').to_json()
@@ -78,14 +77,14 @@ class Quota:
 
     
 def main():
-    logging.basicConfig(filename='logfile.log',
+    user = sys.argv[1] if len(sys.argv) > 1 else None
+    quotas = []
+    user_home = get_home_fs(user)
+    logging.basicConfig(filename=f'{user_home}/ondemand/logfile.log',
                         format='%(asctime)s %(levelname)s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler())
-    user = sys.argv[1] if len(sys.argv) > 1 else None
-    quotas = []
-    user_home = get_home_fs(user)
     for fs in lustre_filesystems:
         quotas.append(Quota(user, fs).get_quota().to_kb().to_json())
     content = {
