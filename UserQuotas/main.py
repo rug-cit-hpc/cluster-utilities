@@ -59,12 +59,6 @@ class Quota:
             logging.warn(f'Quota type {self.quota_type} not supported')
             return self
     
-    def to_kb(self):
-        for key in self.quota:
-            if key in ['block_usage', 'block_soft', 'block_hard']:
-                self.quota[key] = self.quota[key] // 1024
-        return self
-
     def to_json(self):
         quota = {'user': self.group,
                  'path': self.fs + '/' + self.group,
