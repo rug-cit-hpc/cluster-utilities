@@ -77,10 +77,6 @@ class Quota:
         return quota
 
     
-def get_users() -> list:
-    return ['p233780']
-
-
 def main():
     logging.basicConfig(filename='logfile.log',
                         format='%(asctime)s %(levelname)s %(message)s',
